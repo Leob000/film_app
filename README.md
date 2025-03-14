@@ -17,7 +17,7 @@
     - Mixed Precision: Leverage PyTorch's AMP to take advantage of the T4's tensor cores.
 
 # Requirements
-- Python 3.12.8
+- Python 3.12
 - Other dependencies listed in `requirements.txt`
 
 # References
