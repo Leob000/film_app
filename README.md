@@ -1,79 +1,44 @@
-# FiLM: Visual Reasoning with a General Conditioning Layer
+# Todo
+- Rapport
+- Sur quel dataset? Idem que l'article/Réduction de types d'objets/Réduction de résolution
+- Quelle application? Quelle interactivité?
+    - Visualisation des tSNE?
+    - Appli qui tourne juste sur CPU laptop? Ou faire aussi une partie plus complexe?
+        - Plutôt faire au moins un gros modèle efficace, pré-entraîné avec les poids importés dans streamlit, et un petit modèle entraînable laptop CPU même si réusltats dégeulasses
+    - Idées interaction :
+        - Visualisation des tSNE, visualisation de ce que le MLP voit, et lien entre les 2?
+        - Un modèle classique, un modèle avec zero-shot ?
+        - Question "fait main" avec un drop down menu pour poser des questions sur l'image
 
-## Ethan Perez, Florian Strub, Harm de Vries, Vincent Dumoulin, Aaron Courville
+- Ne pas oublier de mettre un graph de comparaison de performance sur jeux de donnée classiques?
+- Docu avec sphinx? Voir quel format de docstrings, extension vscode docstrings auto?
+- Problème du training GPU poor:
+    - Checkpointing: Make sure your training loop saves progress frequently so you can resume after a session timeout.
+    - Mixed Precision: Leverage PyTorch's AMP to take advantage of the T4's tensor cores.
 
-This code implements a Feature-wise Linear Modulation approach to Visual Reasoning - answering multi-step questions on images. This codebase reproduces results from the AAAI 2018 paper "FiLM: Visual Reasoning with a General Conditioning Layer" (citation [here](https://github.com/ethanjperez/film#film)), which extends prior work "Learning Visual Reasoning Without Strong Priors" presented at ICML's MLSLP workshop. Please see the [retrospective paper](https://ml-retrospectives.github.io/neurips2019/accepted_retrospectives/2019/film/) (citation [here](https://github.com/ethanjperez/film#retrospective-for-film)) for an honest reflection on FiLM after the work that followed, including when to (and not to) use FiLM and tips-and-tricks for effectively training a network with FiLM layers.
+# Requirements
+- Python 3.12.8
+- Other dependencies listed in `requirements.txt`
 
-### Code Outline
+# References
+- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
+- [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
+- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
 
-This code is a fork from the code for "Inferring and Executing Programs for Visual Reasoning" available [here](https://github.com/facebookresearch/clevr-iep).
-
-Our FiLM Generator is located in [vr/models/film_gen.py](https://github.com/ethanjperez/film/blob/master/vr/models/film_gen.py), and our FiLMed Network and FiLM layer implementation is located in [vr/models/filmed_net.py](https://github.com/ethanjperez/film/blob/master/vr/models/filmed_net.py).
-
-We inserted a new model mode "FiLM" which integrates into forked code for [CLEVR baselines](https://arxiv.org/abs/1612.06890) and the [Program Generator + Execution Engine model](https://arxiv.org/abs/1705.03633). Throughout the code, for our model, our FiLM Generator acts in place of the "program generator" which generates the FiLM parameters for an the FiLMed Network, i.e. "execution engine." In some sense, FiLM parameters can vaguely be thought of as a "soft program" of sorts, but we use this denotation in the code to integrate better with the forked models.
-
-### Setup and Training
-
-Because of this integration, setup instructions for the FiLM model are nearly the same as for "Inferring and Executing Programs for Visual Reasoning." We will post more detailed instructions on how to use our code in particular soon for more step-by-step guidance. For now, the guidelines below should give substantial direction to those interested.
-
-First, follow the virtual environment setup [instructions](https://github.com/facebookresearch/clevr-iep#setup).
-
-Second, follow the CLEVR data preprocessing [instructions](https://github.com/facebookresearch/clevr-iep/blob/master/TRAINING.md#preprocessing-clevr).
-
-Lastly, model training details are similar at a high level (though adapted for FiLM and our repo) to [these](https://github.com/facebookresearch/clevr-iep/blob/master/TRAINING.md#training-on-clevr) for the Program Generator + Execution Engine model, though our model only uses one step of training, rather than a 3-step training procedure.
-
-The below script has the hyperparameters and settings to reproduce FiLM CLEVR results:
+# Get the data
+To download the data, run:
 ```bash
-sh scripts/train/film.sh
+mkdir data
+wget https://dl.fbaipublicfiles.com/clevr/CLEVR_v1.0.zip -O data/CLEVR_v1.0.zip
+unzip data/CLEVR_v1.0.zip -d data
 ```
 
-
-For CLEVR-Humans, data preprocessing instructions are [here](https://github.com/facebookresearch/clevr-iep/blob/master/TRAINING.md#preprocessing-clevr-humans).
-The below script has the hyperparameters and settings to reproduce FiLM CLEVR-Humans results:
+To preprocess the data from pngs to a h5 file for each train/val/test set, run the following code. The data will be the raw pixels, there are options to extract features with the option `--model resnet101` (1024x14x14 output), or to set a maximum number of X processed images `--max_images X` (check `extract_features.py`).
 ```bash
-sh scripts/train/film_humans.sh
+bash scripts/extract_features.sh
 ```
 
-
-Training a CLEVR-CoGenT model is very similar to training a normal CLEVR model. Training a model from pixels requires modifying the preprocessing with scripts included in the repo to preprocess pixels. The scripts to reproduce our results are also located in the scripts/train/ folder.
-
-We tried to not break existing models from the CLEVR codebase with our modifications, but we haven't tested their code after our changes. We recommend using using the CLEVR and "Inferring and Executing Programs for Visual Reasoning" code directly.
-
-Training a solid FiLM CLEVR model should only take ~12 hours on a good GPU (See training curves in the paper appendix).
-
-### Running models
-
-We added an interactive command line tool for use with the below command/script. It's actually super enjoyable to play around with trained models. It's great for gaining intuition around what various trained models have or have not learned and how they tackle reasoning questions.
+To preprocess the questions, execute this script:
 ```bash
-python run_model.py --program_generator <FiLM Generator filepath> --execution_engine <FiLMed Network filepath>
-```
-
-By default, the command runs on [this CLEVR image](https://github.com/ethanjperez/film/blob/master/img/CLEVR_val_000017.png) in our repo, but you may modify which image to use via command line flag to test on any CLEVR image.
-
-CLEVR vocab is enforced by default, but for CLEVR-Humans models, for example, you may append the command line flag option '--enforce_clevr_vocab 0' to ask any string of characters you please.
-
-In addition, one easier way to try out zero-shot with FiLM is to run a trained model with run_model.py, but with the implemented debug command line flag on so you can manipulate the FiLM parameters modulating the FiLMed network during the forward computation. For example, '--debug_every -1' will stop the program after the model generates FiLM parameters but before the FiLMed network carries out its forward pass using FiLM layers.
-
-Thanks for stopping by, and we hope you enjoy playing around with FiLM!
-
-### Bibtex
-
-#### FiLM
-```bash
-@InProceedings{perez2018film,
-  title={FiLM: Visual Reasoning with a General Conditioning Layer},
-  author={Ethan Perez and Florian Strub and Harm de Vries and Vincent Dumoulin and Aaron C. Courville},
-  booktitle={AAAI},
-  year={2018}
-}
-```
-
-#### Retrospective for FiLM
-```bash
-@misc{perez2019retrospective,
-  author = {Perez, Ethan},
-  title = {{Retroespective for: "FiLM: Visual Reasoning with a General Conditioning Layer"}},
-  year = {2019},
-  howpublished = {\url{https://ml-retrospectives.github.io/published_retrospectives/2019/film/}},
-}
+bash scripts/preprocess_questions.sh
 ```

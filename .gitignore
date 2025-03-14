@@ -1,5 +1,7 @@
 # Data files
-data
+data/
+my_stuff/
+testing.py
 
 # Experiment files
 exp
