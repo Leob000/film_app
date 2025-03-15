@@ -26,11 +26,11 @@ def _dataset_to_tensor(dset, mask=None):
 class ClevrDataset(Dataset):
     def __init__(
         self,
-        question_h5,
-        feature_h5,
+        question_h5_path,
+        feature_h5_path,
         vocab,
         mode="prefix",
-        image_h5=None,
+        image_h5_path=None,
         max_samples=None,
         question_families=None,
         image_idx_start_from=None,
@@ -38,44 +38,56 @@ class ClevrDataset(Dataset):
         mode_choices = ["prefix", "postfix"]
         if mode not in mode_choices:
             raise ValueError('Invalid mode "%s"' % mode)
-        self.image_h5 = image_h5
         self.vocab = vocab
-        self.feature_h5 = feature_h5
         self.mode = mode
         self.max_samples = max_samples
 
-        mask = None
-        if question_families is not None:
-            # Use only the specified families
-            all_families = np.asarray(question_h5["question_families"])
-            N = all_families.shape[0]
-            print(question_families)
-            target_families = np.asarray(question_families)[:, None]
-            mask = (all_families == target_families).any(axis=0)
-        if image_idx_start_from is not None:
-            all_image_idxs = np.asarray(question_h5["image_idxs"])
-            mask = all_image_idxs >= image_idx_start_from
+        # Store file paths for lazy loading
+        self.feature_h5_path = feature_h5_path
+        self.image_h5_path = image_h5_path
+        self.feature_h5 = None
+        self.image_h5 = None
 
-        # Data from the question file is small, so read it all into memory
-        print("Reading question data into memory")
-        self.all_types = None
-        if "types" in question_h5:
-            self.all_types = _dataset_to_tensor(question_h5["types"], mask)
-        self.all_question_families = None
-        if "question_families" in question_h5:
-            self.all_question_families = _dataset_to_tensor(
-                question_h5["question_families"], mask
-            )
-        self.all_questions = _dataset_to_tensor(question_h5["questions"], mask)
-        self.all_image_idxs = _dataset_to_tensor(question_h5["image_idxs"], mask)
-        self.all_programs = None
-        if "programs" in question_h5:
-            self.all_programs = _dataset_to_tensor(question_h5["programs"], mask)
-        self.all_answers = None
-        if "answers" in question_h5:
-            self.all_answers = _dataset_to_tensor(question_h5["answers"], mask)
+        # Read question data into memory (file is small, so it's okay to load here)
+        print("Reading question data into memory from", question_h5_path)
+        with h5py.File(question_h5_path, "r") as question_h5:
+            mask = None
+            if question_families is not None:
+                # Use only the specified families
+                all_families = np.asarray(question_h5["question_families"])
+                target_families = np.asarray(question_families)[:, None]
+                mask = (all_families == target_families).any(axis=0)
+            if image_idx_start_from is not None:
+                all_image_idxs = np.asarray(question_h5["image_idxs"])
+                mask = all_image_idxs >= image_idx_start_from
+
+            self.all_types = None
+            if "types" in question_h5:
+                self.all_types = _dataset_to_tensor(question_h5["types"], mask)
+            self.all_question_families = None
+            if "question_families" in question_h5:
+                self.all_question_families = _dataset_to_tensor(
+                    question_h5["question_families"], mask
+                )
+            self.all_questions = _dataset_to_tensor(question_h5["questions"], mask)
+            self.all_image_idxs = _dataset_to_tensor(question_h5["image_idxs"], mask)
+            self.all_programs = None
+            if "programs" in question_h5:
+                self.all_programs = _dataset_to_tensor(question_h5["programs"], mask)
+            self.all_answers = None
+            if "answers" in question_h5:
+                self.all_answers = _dataset_to_tensor(question_h5["answers"], mask)
+
+    def _lazy_open_files(self):
+        # Open hdf5 files only if they haven't been opened yet.
+        if self.feature_h5 is None:
+            self.feature_h5 = h5py.File(self.feature_h5_path, "r")
+        if self.image_h5 is None and self.image_h5_path is not None:
+            self.image_h5 = h5py.File(self.image_h5_path, "r")
 
     def __getitem__(self, index):
+        self._lazy_open_files()
+
         if self.all_question_families is not None:
             question_family = self.all_question_families[index]
         q_type = None if self.all_types is None else self.all_types[index]
@@ -100,7 +112,13 @@ class ClevrDataset(Dataset):
         if program_seq is not None:
             program_json_seq = []
             for fn_idx in program_seq:
-                fn_str = self.vocab["program_idx_to_token"][fn_idx]
+                # Convert fn_idx from a tensor to an int
+                key = (
+                    int(fn_idx.item())
+                    if isinstance(fn_idx, torch.Tensor)
+                    else int(fn_idx)
+                )
+                fn_str = self.vocab["program_idx_to_token"][key]
                 if fn_str == "<START>" or fn_str == "<END>":
                     continue
                 fn = vr.programs.str_to_function(fn_str)
@@ -120,6 +138,18 @@ class ClevrDataset(Dataset):
         else:
             return min(self.max_samples, self.all_questions.size(0))
 
+    def close(self):
+        # Close any opened hdf5 files
+        if self.image_h5 is not None:
+            self.image_h5.close()
+            self.image_h5 = None
+        if self.feature_h5 is not None:
+            self.feature_h5.close()
+            self.feature_h5 = None
+
+    def __del__(self):
+        self.close()
+
 
 class ClevrDataLoader(DataLoader):
     def __init__(self, **kwargs):
@@ -130,44 +160,38 @@ class ClevrDataLoader(DataLoader):
         if "vocab" not in kwargs:
             raise ValueError("Must give vocab")
 
+        # Instead of opening hdf5 files here, we just store the file paths.
         feature_h5_path = kwargs.pop("feature_h5")
-        print("Reading features from", feature_h5_path)
+        print("Using features from", feature_h5_path)
 
-        self.feature_h5 = h5py.File(feature_h5_path, "r")
-
-        self.image_h5 = None
+        image_h5_path = None
         if "image_h5" in kwargs:
             image_h5_path = kwargs.pop("image_h5")
-            print("Reading images from ", image_h5_path)
-            self.image_h5 = h5py.File(image_h5_path, "r")
+            print("Using images from", image_h5_path)
 
         vocab = kwargs.pop("vocab")
         mode = kwargs.pop("mode", "prefix")
-
         question_families = kwargs.pop("question_families", None)
         max_samples = kwargs.pop("max_samples", None)
         question_h5_path = kwargs.pop("question_h5")
+        print("Reading questions from", question_h5_path)
         image_idx_start_from = kwargs.pop("image_idx_start_from", None)
-        print("Reading questions from ", question_h5_path)
-        with h5py.File(question_h5_path, "r") as question_h5:
-            self.dataset = ClevrDataset(
-                question_h5,
-                self.feature_h5,
-                vocab,
-                mode,
-                image_h5=self.image_h5,
-                max_samples=max_samples,
-                question_families=question_families,
-                image_idx_start_from=image_idx_start_from,
-            )
+        self.dataset = ClevrDataset(
+            question_h5_path,
+            feature_h5_path,
+            vocab,
+            mode,
+            image_h5_path=image_h5_path,
+            max_samples=max_samples,
+            question_families=question_families,
+            image_idx_start_from=image_idx_start_from,
+        )
         kwargs["collate_fn"] = clevr_collate
         super(ClevrDataLoader, self).__init__(self.dataset, **kwargs)
 
     def close(self):
-        if self.image_h5 is not None:
-            self.image_h5.close()
-        if self.feature_h5 is not None:
-            self.feature_h5.close()
+        if hasattr(self, "dataset"):
+            self.dataset.close()
 
     def __enter__(self):
         return self

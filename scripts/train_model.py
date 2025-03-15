@@ -192,7 +192,7 @@ parser.add_argument("--randomize_checkpoint_path", type=int, default=0)
 parser.add_argument("--avoid_checkpoint_override", default=0, type=int)
 parser.add_argument("--record_loss_every", default=1, type=int)
 parser.add_argument("--checkpoint_every", default=10000, type=int)
-parser.add_argument("--time", default=0, type=int)
+parser.add_argument("--time", default=1, type=int)
 
 
 def main(args):
@@ -420,16 +420,16 @@ def train_loop(args, train_loader, val_loader, device):
                     ee_optimizer.step()
 
             if t % args.record_loss_every == 0:
-                running_loss += loss.data[0]
+                running_loss += loss.item()
                 avg_loss = running_loss / args.record_loss_every
-                print(t, avg_loss)
+                print("t:", t, "avg_loss", avg_loss)
                 stats["train_losses"].append(avg_loss)
                 stats["train_losses_ts"].append(t)
                 if reward is not None:
                     stats["train_rewards"].append(reward)
                 running_loss = 0.0
             else:
-                running_loss += loss.data[0]
+                running_loss += loss.item()
 
             if t % args.checkpoint_every == 0:
                 num_checkpoints += 1
@@ -703,48 +703,49 @@ def check_accuracy(
         if isinstance(questions, list):
             questions = questions[0]
 
-        questions_var = Variable(questions.to(device), volatile=True)
-        feats_var = Variable(feats.to(device), volatile=True)
-        answers_var = Variable(feats.to(device), volatile=True)
-        if programs[0] is not None:
-            programs_var = Variable(programs.to(device), volatile=True)
+        with torch.no_grad():
+            questions_var = Variable(questions.to(device))
+            feats_var = Variable(feats.to(device))
+            answers_var = Variable(feats.to(device))
+            if programs[0] is not None:
+                programs_var = Variable(programs.to(device))
 
-        scores = None  # Use this for everything but PG
-        if args.model_type == "PG":
-            vocab = utils.load_vocab(args.vocab_json)
-            for i in range(questions.size(0)):
-                program_pred = program_generator.sample(
-                    Variable(questions[i : i + 1].to(device), volatile=True)
+            scores = None  # Use this for everything but PG
+            if args.model_type == "PG":
+                vocab = utils.load_vocab(args.vocab_json)
+                for i in range(questions.size(0)):
+                    program_pred = program_generator.sample(
+                        Variable(questions[i : i + 1].to(device))
+                    )
+                    program_pred_str = vr.preprocess.decode(
+                        program_pred, vocab["program_idx_to_token"]
+                    )
+                    program_str = vr.preprocess.decode(
+                        programs[i], vocab["program_idx_to_token"]
+                    )
+                    if program_pred_str == program_str:
+                        num_correct += 1
+                    num_samples += 1
+            elif args.model_type == "EE":
+                scores = execution_engine(feats_var, programs_var)
+            elif args.model_type == "PG+EE":
+                programs_pred = program_generator.reinforce_sample(
+                    questions_var, argmax=True
                 )
-                program_pred_str = vr.preprocess.decode(
-                    program_pred, vocab["program_idx_to_token"]
-                )
-                program_str = vr.preprocess.decode(
-                    programs[i], vocab["program_idx_to_token"]
-                )
-                if program_pred_str == program_str:
-                    num_correct += 1
-                num_samples += 1
-        elif args.model_type == "EE":
-            scores = execution_engine(feats_var, programs_var)
-        elif args.model_type == "PG+EE":
-            programs_pred = program_generator.reinforce_sample(
-                questions_var, argmax=True
-            )
-            scores = execution_engine(feats_var, programs_pred)
-        elif args.model_type == "FiLM":
-            programs_pred = program_generator(questions_var)
-            scores = execution_engine(feats_var, programs_pred)
-        elif args.model_type in ["LSTM", "CNN+LSTM", "CNN+LSTM+SA"]:
-            scores = baseline_model(questions_var, feats_var)
+                scores = execution_engine(feats_var, programs_pred)
+            elif args.model_type == "FiLM":
+                programs_pred = program_generator(questions_var)
+                scores = execution_engine(feats_var, programs_pred)
+            elif args.model_type in ["LSTM", "CNN+LSTM", "CNN+LSTM+SA"]:
+                scores = baseline_model(questions_var, feats_var)
 
-        if scores is not None:
-            _, preds = scores.data.cpu().max(1)
-            num_correct += (preds == answers).sum()
-            num_samples += preds.size(0)
+            if scores is not None:
+                _, preds = scores.data.cpu().max(1)
+                num_correct += (preds == answers).sum()
+                num_samples += preds.size(0)
 
-        if args.num_val_samples is not None and num_samples >= args.num_val_samples:
-            break
+            if args.num_val_samples is not None and num_samples >= args.num_val_samples:
+                break
 
     set_mode("train", [program_generator, execution_engine, baseline_model])
     acc = float(num_correct) / num_samples
