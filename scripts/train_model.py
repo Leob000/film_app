@@ -18,6 +18,7 @@ import random
 import shutil
 from termcolor import colored
 import time
+from datetime import datetime
 
 import torch
 
@@ -192,7 +193,7 @@ parser.add_argument("--randomize_checkpoint_path", type=int, default=0)
 parser.add_argument("--avoid_checkpoint_override", default=0, type=int)
 parser.add_argument("--record_loss_every", default=1, type=int)
 parser.add_argument("--checkpoint_every", default=10000, type=int)
-parser.add_argument("--time", default=1, type=int)
+parser.add_argument("--time", default=0, type=int)
 
 
 def main(args):
@@ -257,6 +258,8 @@ def main(args):
         os.remove("/tmp/train_features.h5")
         os.remove("/tmp/val_questions.h5")
         os.remove("/tmp/val_features.h5")
+    now = datetime.now()
+    print("Current date and time:", now.strftime("%Y-%m-%d %H:%M"))
 
 
 def train_loop(args, train_loader, val_loader, device):
@@ -338,6 +341,8 @@ def train_loop(args, train_loader, val_loader, device):
 
         epoch += 1
         print("Starting epoch %d" % epoch)
+        now = datetime.now()
+        print("Current date and time (epoch):", now.strftime("%Y-%m-%d %H:%M"))
         for batch in train_loader:
             t += 1
             questions, _, feats, answers, programs, _ = batch
@@ -434,6 +439,8 @@ def train_loop(args, train_loader, val_loader, device):
             if t % args.checkpoint_every == 0:
                 num_checkpoints += 1
                 print("Checking training accuracy ... ")
+                now = datetime.now()
+                print("Current date and time:", now.strftime("%Y-%m-%d %H:%M"))
                 start = time.time()
                 train_acc = check_accuracy(
                     args,
@@ -458,6 +465,8 @@ def train_loop(args, train_loader, val_loader, device):
                     )
                 print("train accuracy is", train_acc)
                 print("Checking validation accuracy ...")
+                now = datetime.now()
+                print("Current date and time:", now.strftime("%Y-%m-%d %H:%M"))
                 start = time.time()
                 val_acc = check_accuracy(
                     args,
