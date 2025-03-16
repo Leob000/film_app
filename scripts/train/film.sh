@@ -5,9 +5,9 @@ log_path="data/film.log"
 python scripts/train_model.py \
   --checkpoint_path $checkpoint_path \
   --model_type FiLM \
-  --num_iterations 100 \
+  --num_iterations 20000000 \
   --print_verbose_every 20000000 \
-  --checkpoint_every 100 \
+  --checkpoint_every 11000 \
   --record_loss_every 100 \
   --num_val_samples 149991 \
   --optimizer Adam \
@@ -37,7 +37,7 @@ python scripts/train_model.py \
   --module_kernel_size 3 \
   --module_batchnorm_affine 0 \
   --module_num_layers 1 \
-  --num_modules 4 \
+  --num_modules 3 \
   --condition_pattern 1,1,1,1 \
   --gamma_option linear \
   --gamma_baseline 1 \
