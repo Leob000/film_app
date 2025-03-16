@@ -1,20 +1,21 @@
 # Todo
-- Rapport
-- Sur quel dataset? Idem que l'article/Réduction de types d'objets/Réduction de résolution
-- Quelle application? Quelle interactivité?
-    - Visualisation des tSNE?
-    - Appli qui tourne juste sur CPU laptop? Ou faire aussi une partie plus complexe?
-        - Plutôt faire au moins un gros modèle efficace, pré-entraîné avec les poids importés dans streamlit, et un petit modèle entraînable laptop CPU même si réusltats dégeulasses
-    - Idées interaction :
-        - Visualisation des tSNE, visualisation de ce que le MLP voit, et lien entre les 2?
-        - Un modèle classique, un modèle avec zero-shot ?
-        - Question "fait main" avec un drop down menu pour poser des questions sur l'image
-
-- Ne pas oublier de mettre un graph de comparaison de performance sur jeux de donnée classiques?
-- Docu avec sphinx? Voir quel format de docstrings, extension vscode docstrings auto?
-- Problème du training GPU poor:
-    - Checkpointing: Make sure your training loop saves progress frequently so you can resume after a session timeout.
-    - Mixed Precision: Leverage PyTorch's AMP to take advantage of the T4's tensor cores.
+- [-] Rapport
+- Streamlit
+    - [ ] Docu sphinx
+    - [ ] Gros modèle pré-entraîné
+        - [x] Obtention des weights
+        - [ ] Streamlit poser questions sur image
+        - [ ] Visualisation des histogrammes gamma/beta
+        - [ ] Visualisation tSNE
+        - [ ] Visualisation de ce que le MLP "voit"
+    - [ ] Petit modèle, train sur CPU
+        - Avoir aussi le preprocessing réduit?
+        - Comment avoir un temps d'entraînement rapide? réduire architecture? réduire train/val dataset?
+        - [ ] Streamlit train
+        - [ ] Streamlit questions
+- Bonus:
+    - Zero-shot
+    - Graph comparaison de performance sur jeux de donnée classique
 
 # Requirements
 - Python 3.12
