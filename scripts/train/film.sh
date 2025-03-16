@@ -37,7 +37,7 @@ python scripts/train_model.py \
   --module_kernel_size 3 \
   --module_batchnorm_affine 0 \
   --module_num_layers 1 \
-  --num_modules 4 \
+  --num_modules 3 \
   --condition_pattern 1,1,1,1 \
   --gamma_option linear \
   --gamma_baseline 1 \
