@@ -26,6 +26,7 @@
 - [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
 
 # Get the data
+For each script, check the `.sh` and/or the `.py` associated file to modify parameters.
 To download the data, run:
 ```bash
 mkdir data
@@ -50,5 +51,5 @@ sh scripts/train/film.sh
 
 To run the model (on `CLEVR_val_000017.png` by default):
 ```bash
-python run_model.py --program_generator <FiLM Generator filepath> --execution_engine <FiLMed Network filepath>
+sh scripts/run_model.sh
 ```
