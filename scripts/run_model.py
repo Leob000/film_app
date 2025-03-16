@@ -4,6 +4,15 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+import imageio
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from PIL import Image
+from torch.autograd import Variable
+
 import argparse
 import ipdb as pdb
 import json
@@ -13,23 +22,16 @@ from termcolor import colored
 import time
 from tqdm import tqdm
 import sys
-import os
 
 sys.path.insert(0, os.path.abspath("."))
 
-import torch
-from torch.autograd import Variable
-import torch.nn.functional as F
 import torchvision
-import numpy as np
 import h5py
-from scipy.misc import imread, imresize, imsave
 
 import vr.utils as utils
 import vr.programs
 from vr.data import ClevrDataset, ClevrDataLoader
 from vr.preprocess import tokenize, encode
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--program_generator", default="data/best.pt")
@@ -95,8 +97,18 @@ programs = {}  # NOTE: Useful for zero-shot program manipulation when in debug m
 
 
 def main(args):
-    if args.debug_every <= 1:
-        pdb.set_trace()
+    # Determine device: if use_gpu flag is set then use CUDA if available,
+    # else try MPS (for newer Macs) and fall back to CPU.
+    if args.use_gpu:
+        device = torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
+        )
+    else:
+        device = torch.device("cpu")
+    print("Using device:", device)
+
     model = None
     if args.baseline_model is not None:
         print("Loading baseline model from ", args.baseline_model)
@@ -119,23 +131,19 @@ def main(args):
         )
         return
 
-    dtype = torch.FloatTensor
-    if args.use_gpu == 1:
-        dtype = torch.cuda.FloatTensor
     if args.question is not None and args.image is not None:
-        run_single_example(args, model, dtype, args.question)
+        run_single_example(args, model, device, args.question)
     # Interactive mode
     elif (
         args.image is not None
         and args.input_question_h5 is None
         and args.input_features_h5 is None
     ):
-        feats_var = extract_image_features(args, dtype)
+        feats_var = extract_image_features(args, device)
         print(colored("Ask me something!", "cyan"))
         while True:
-            # Get user question
             question_raw = input(">>> ")
-            run_single_example(args, model, dtype, question_raw, feats_var)
+            run_single_example(args, model, device, question_raw, feats_var)
     else:
         vocab = load_vocab(args)
         loader_kwargs = {
@@ -150,35 +158,45 @@ def main(args):
             with open(args.family_split_file, "r") as f:
                 loader_kwargs["question_families"] = json.load(f)
         with ClevrDataLoader(**loader_kwargs) as loader:
-            run_batch(args, model, dtype, loader)
+            run_batch(args, model, device, loader)
 
 
-def extract_image_features(args, dtype):
+def extract_image_features(args, device):
     # Build the CNN to use for feature extraction
     print("Extracting image features...")
-    cnn = build_cnn(args, dtype)
+    cnn = build_cnn(args, device)
 
     # Load and preprocess the image
     img_size = (args.image_height, args.image_width)
-    img = imread(args.image, mode="RGB")
-    img = imresize(img, img_size, interp="bicubic")
+
+    # Read image using imageio (ensuring RGB mode)
+    img = imageio.imread(args.image, pilmode="RGB")
+
+    # Resize image using PIL
+    im = Image.fromarray(img)
+    im_resized = im.resize((img_size[1], img_size[0]), resample=Image.BICUBIC)
+    img = np.array(im_resized)
+
+    # Transpose image dimensions to (1, channels, height, width)
     img = img.transpose(2, 0, 1)[None]
+
+    # Normalize the image
     mean = np.array([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1)
     std = np.array([0.229, 0.224, 0.224]).reshape(1, 3, 1, 1)
     img = (img.astype(np.float32) / 255.0 - mean) / std
 
-    # Use CNN to extract features for the image
-    img_var = Variable(
-        torch.FloatTensor(img).type(dtype), volatile=False, requires_grad=True
-    )
+    # Create a PyTorch tensor for the image on the proper device
+    img_var = torch.tensor(img, dtype=torch.float32, device=device, requires_grad=True)
+
+    # Use the CNN to extract features for the image
     feats_var = cnn(img_var)
     return feats_var
 
 
-def run_single_example(args, model, dtype, question_raw, feats_var=None):
+def run_single_example(args, model, device, question_raw, feats_var=None):
     interactive = feats_var is not None
     if not interactive:
-        feats_var = extract_image_features(args, dtype)
+        feats_var = extract_image_features(args, device)
 
     # Tokenize the question
     vocab = load_vocab(args)
@@ -198,18 +216,19 @@ def run_single_example(args, model, dtype, question_raw, feats_var=None):
     question_encoded = encode(
         question_tokens, vocab["question_token_to_idx"], allow_unk=True
     )
-    question_encoded = torch.LongTensor(question_encoded).view(1, -1)
-    question_encoded = question_encoded.type(dtype).long()
-    question_var = Variable(question_encoded, volatile=False)
+    question_encoded = torch.tensor(
+        question_encoded, dtype=torch.long, device=device
+    ).view(1, -1)
+    question_var = Variable(question_encoded)
 
     # Run the model
     scores = None
     predicted_program = None
     if type(model) is tuple:
         pg, ee = model
-        pg.type(dtype)
+        pg.to(device)
         pg.eval()
-        ee.type(dtype)
+        ee.to(device)
         ee.eval()
         if args.model_type == "FiLM":
             predicted_program = pg(question_var)
@@ -224,20 +243,21 @@ def run_single_example(args, model, dtype, question_raw, feats_var=None):
             pdb.set_trace()
         scores = ee(feats_var, predicted_program, save_activations=True)
     else:
-        model.type(dtype)
+        model.to(device)
         scores = model(question_var, feats_var)
 
     # Print results
     predicted_probs = scores.data.cpu()
     _, predicted_answer_idx = predicted_probs[0].max(dim=0)
-    predicted_probs = F.softmax(Variable(predicted_probs[0])).data
-    predicted_answer = vocab["answer_idx_to_token"][predicted_answer_idx[0]]
+    predicted_probs = F.softmax(Variable(predicted_probs[0]), dim=0).data
+    predicted_answer = vocab["answer_idx_to_token"][predicted_answer_idx.item()]
 
     answers_to_probs = {}
     for i in range(len(vocab["answer_idx_to_token"])):
         answers_to_probs[vocab["answer_idx_to_token"][i]] = predicted_probs[i]
-    answers_to_probs_sorted = sorted(answers_to_probs.items(), key=lambda x: x[1])
-    answers_to_probs_sorted.reverse()
+    answers_to_probs_sorted = sorted(
+        answers_to_probs.items(), key=lambda x: x[1], reverse=True
+    )
     for i in range(len(answers_to_probs_sorted)):
         if answers_to_probs_sorted[i][1] >= 1e-3 and args.debug_every < float("inf"):
             print(
@@ -304,10 +324,10 @@ def run_single_example(args, model, dtype, question_raw, feats_var=None):
                 break
 
 
-def run_our_model_batch(args, pg, ee, loader, dtype):
-    pg.type(dtype)
+def run_our_model_batch(args, pg, ee, loader, device):
+    pg.to(device)
     pg.eval()
-    ee.type(dtype)
+    ee.to(device)
     ee.eval()
 
     all_scores, all_programs = [], []
@@ -319,10 +339,10 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
     loaded_betas = None
     if args.gammas_from:
         print("Loading ")
-        loaded_gammas = torch.load(args.gammas_from)
+        loaded_gammas = torch.load(args.gammas_from, map_location=device)
     if args.betas_from:
         print("Betas loaded!")
-        loaded_betas = torch.load(args.betas_from)
+        loaded_betas = torch.load(args.betas_from, map_location=device)
 
     q_types = []
     film_params = []
@@ -344,9 +364,7 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
                     question.numpy().tolist(), index=2, default=len(question)
                 )
                 if args.num_last_words_shuffled > 0:
-                    q_end -= (
-                        args.num_last_words_shuffled
-                    )  # Leave last few words unshuffled
+                    q_end -= args.num_last_words_shuffled
                 if q_end < 2:
                     q_end = 2
                 question = question[1:q_end]
@@ -354,11 +372,11 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
                 questions[i][1:q_end] = question
 
         if isinstance(questions, list):
-            questions_var = Variable(questions[0].type(dtype).long(), volatile=True)
+            questions_var = Variable(questions[0].to(device).long(), volatile=True)
             q_types += [questions[1].cpu().numpy()]
         else:
-            questions_var = Variable(questions.type(dtype).long(), volatile=True)
-        feats_var = Variable(feats.type(dtype), volatile=True)
+            questions_var = Variable(questions.to(device).long(), volatile=True)
+        feats_var = Variable(feats.to(device), volatile=True)
         if args.model_type == "FiLM":
             programs_pred = pg(questions_var)
             # Examine effect of various conditioning modifications at test time!
@@ -390,7 +408,7 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
 
         film_params += [programs_pred.cpu().data.numpy()]
         scores = ee(feats_var, programs_pred, save_activations=True)
-        probs = F.softmax(scores)
+        probs = F.softmax(scores, dim=1)
 
         _, preds = scores.data.cpu().max(1)
         all_programs.append(programs_pred.data.cpu().clone())
@@ -403,7 +421,7 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
 
     acc = float(num_correct) / num_samples
     print("Got %d / %d = %.2f correct" % (num_correct, num_samples, 100 * acc))
-    print("%.2fs to evaluate" % (start - time.time()))
+    print("%.2fs to evaluate" % (time.time() - start))
     all_programs = torch.cat(all_programs, 0)
     all_scores = torch.cat(all_scores, 0)
     all_probs = torch.cat(all_probs, 0)
@@ -462,13 +480,13 @@ def run_our_model_batch(args, pg, ee, loader, dtype):
 def visualize(features, args, file_name=None):
     """
     Converts a 4d map of features to alpha attention weights,
-    According to their 2-Norm across dimensions 0 and 1.
+    according to their 2-norm across dimensions 0 and 1.
     Then saves the input RGB image as an RGBA image using an upsampling of this attention map.
     """
-    save_file = os.path.join(args.viz_dir, file_name)
+    save_file = os.path.join(args.viz_dir, file_name) if file_name is not None else None
     img_path = args.image
 
-    # Scale map to [0, 1]
+    # Scale feature map to [0, 1]
     f_map = (features**2).mean(0).mean(1).squeeze().sqrt()
     f_map_shifted = f_map - f_map.min().expand_as(f_map)
     f_map_scaled = f_map_shifted / f_map_shifted.max().expand_as(f_map_shifted)
@@ -476,36 +494,31 @@ def visualize(features, args, file_name=None):
     if save_file is None:
         print(f_map_scaled)
     else:
-        # Read original image
-        img = imread(img_path, mode="RGB")
-        orig_img_size = img.shape
+        img = imageio.imread(img_path, pilmode="RGB")
+        orig_img_size = img.shape[:2]
 
-        # Convert to image format
         alpha = (255 * f_map_scaled).round()
         alpha4d = alpha.unsqueeze(0).unsqueeze(0)
-        alpha_upsampled = (
-            torch.nn.functional.upsample_bilinear(
-                alpha4d, size=torch.Size(orig_img_size)
-            )
-            .squeeze(0)
-            .transpose(1, 0)
-            .transpose(1, 2)
+        alpha_upsampled = F.interpolate(
+            alpha4d, size=orig_img_size, mode="bilinear", align_corners=False
         )
+        alpha_upsampled = alpha_upsampled.squeeze(0).transpose(1, 0).transpose(1, 2)
         alpha_upsampled_np = alpha_upsampled.cpu().data.numpy()
 
-        # Create and save visualization
         imga = np.concatenate([img, alpha_upsampled_np], axis=2)
-        if save_file[-4:] != ".png":
+
+        if not save_file.lower().endswith(".png"):
             save_file += ".png"
-        imsave(save_file, imga)
+
+        imageio.imwrite(save_file, imga)
 
     return f_map_scaled
 
 
-def build_cnn(args, dtype):
+def build_cnn(args, device):
     if not hasattr(torchvision.models, args.cnn_model):
         raise ValueError('Invalid model "%s"' % args.cnn_model)
-    if not "resnet" in args.cnn_model:
+    if "resnet" not in args.cnn_model:
         raise ValueError("Feature extraction only supports ResNets")
     whole_cnn = getattr(torchvision.models, args.cnn_model)(pretrained=True)
     layers = [
@@ -518,21 +531,21 @@ def build_cnn(args, dtype):
         name = "layer%d" % (i + 1)
         layers.append(getattr(whole_cnn, name))
     cnn = torch.nn.Sequential(*layers)
-    cnn.type(dtype)
+    cnn.to(device)
     cnn.eval()
     return cnn
 
 
-def run_batch(args, model, dtype, loader):
+def run_batch(args, model, device, loader):
     if type(model) is tuple:
         pg, ee = model
-        run_our_model_batch(args, pg, ee, loader, dtype)
+        run_our_model_batch(args, pg, ee, loader, device)
     else:
-        run_baseline_batch(args, model, loader, dtype)
+        run_baseline_batch(args, model, loader, device)
 
 
-def run_baseline_batch(args, model, loader, dtype):
-    model.type(dtype)
+def run_baseline_batch(args, model, loader, device):
+    model.to(device)
     model.eval()
 
     all_scores, all_probs = [], []
@@ -540,10 +553,10 @@ def run_baseline_batch(args, model, loader, dtype):
     for batch in loader:
         questions, images, feats, answers, programs, program_lists = batch
 
-        questions_var = Variable(questions.type(dtype).long(), volatile=True)
-        feats_var = Variable(feats.type(dtype), volatile=True)
+        questions_var = Variable(questions.to(device).long(), volatile=True)
+        feats_var = Variable(feats.to(device), volatile=True)
         scores = model(questions_var, feats_var)
-        probs = F.softmax(scores)
+        probs = F.softmax(scores, dim=1)
 
         _, preds = scores.data.cpu().max(1)
         all_scores.append(scores.data.cpu().clone())
