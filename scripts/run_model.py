@@ -279,7 +279,7 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
     cf_conv = ee.classifier[0](ee.cf_input)
     cf_bn = ee.classifier[1](cf_conv)
     pre_pool = ee.classifier[2](cf_bn)
-    pooled = ee.classifier[3](pre_pool)
+    pooled = ee.classifier[3](pre_pool)  # noqa: F841
 
     pre_pool_max_per_c = pre_pool.max(2)[0].max(3)[0].expand_as(pre_pool)
     pre_pool_masked = (pre_pool_max_per_c == pre_pool).float() * pre_pool
@@ -602,7 +602,7 @@ def save_to_file(text, filename):
         myfile.write("\n")
 
 
-def get_index(l, index, default=-1):
+def get_index(l, index, default=-1):  # noqa: E741
     try:
         return l.index(index)
     except ValueError:

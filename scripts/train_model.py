@@ -269,7 +269,7 @@ def train_loop(args, train_loader, val_loader, device):
     baseline_model, baseline_kwargs, baseline_optimizer = None, None, None
     baseline_type = None
 
-    pg_best_state, ee_best_state, baseline_best_state = None, None, None
+    pg_best_state, ee_best_state, baseline_best_state = None, None, None  # noqa: F841
 
     # Set up model
     optim_method = getattr(torch.optim, args.optimizer)
@@ -715,7 +715,7 @@ def check_accuracy(
         with torch.no_grad():
             questions_var = Variable(questions.to(device))
             feats_var = Variable(feats.to(device))
-            answers_var = Variable(feats.to(device))
+            answers_var = Variable(feats.to(device))  # noqa: F841
             if programs[0] is not None:
                 programs_var = Variable(programs.to(device))
 

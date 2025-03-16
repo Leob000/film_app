@@ -70,7 +70,7 @@ def load_execution_engine(path, verbose=True, model_type="PG+EE"):
     else:
         print("Loading EE from " + path)
         model = ModuleNet(**kwargs)
-    cur_state = model.state_dict()
+    cur_state = model.state_dict()  # noqa: F841
     model.load_state_dict(state)
     return model, kwargs
 
