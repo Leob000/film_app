@@ -1,9 +1,5 @@
 import streamlit as st
-
-def FiLM_visualization(query):
-    ### To be implemented ###
-    
-    return()
+#from scripts.run_model import visualize
 
 
 st.title("Feature-wise Linear Modulations")
@@ -23,5 +19,5 @@ with tab2:
     st.header("Visualizing")
     query = st.text_input("Query")
     if query:
-        image = FiLM_visualization(query)
+        #image = visualize(query)
         st.image(image, caption=f"FiLMed image for query : {query}")
