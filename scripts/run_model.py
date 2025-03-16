@@ -91,6 +91,7 @@ parser.add_argument("--output_h5", default=None)
 parser.add_argument("--output_preds", default=None)
 parser.add_argument("--output_viz_dir", default="img/")
 parser.add_argument("--output_program_stats_dir", default=None)
+parser.add_argument("--streamlit", default=False, type=bool)
 
 grads = {}
 programs = {}  # NOTE: Useful for zero-shot program manipulation when in debug mode
@@ -107,11 +108,13 @@ def main(args):
         )
     else:
         device = torch.device("cpu")
-    print("Using device:", device)
+    if not args.streamlit:
+        print("Using device:", device)
 
     model = None
     if args.baseline_model is not None:
-        print("Loading baseline model from ", args.baseline_model)
+        if not args.streamlit:
+            print("Loading baseline model from ", args.baseline_model)
         model, _ = utils.load_baseline(args.baseline_model)
         if args.vocab_json is not None:
             new_vocab = utils.load_vocab(args.vocab_json)
@@ -140,9 +143,13 @@ def main(args):
         and args.input_features_h5 is None
     ):
         feats_var = extract_image_features(args, device)
-        print(colored("Ask me something!", "cyan"))
+        if not args.streamlit:
+            print(colored("Ask me something!", "cyan"))
         while True:
-            question_raw = input(">>> ")
+            if not args.streamlit:
+                question_raw = input(">>> ")
+            else:
+                question_raw = input("")
             run_single_example(args, model, device, question_raw, feats_var)
     else:
         vocab = load_vocab(args)
@@ -163,7 +170,8 @@ def main(args):
 
 def extract_image_features(args, device):
     # Build the CNN to use for feature extraction
-    print("Extracting image features...")
+    if not args.streamlit:
+        print("Extracting image features...")
     cnn = build_cnn(args, device)
 
     # Load and preprocess the image

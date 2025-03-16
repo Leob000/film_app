@@ -48,7 +48,7 @@ def load_program_generator(path, model_type="PG+EE"):
     kwargs = checkpoint["program_generator_kwargs"]
     state = checkpoint["program_generator_state"]
     if model_type == "FiLM":
-        print("Loading FiLMGen from " + path)
+        # print("Loading FiLMGen from " + path)
         kwargs = get_updated_args(kwargs, FiLMGen)
         model = FiLMGen(**kwargs)
     else:
@@ -64,7 +64,7 @@ def load_execution_engine(path, verbose=True, model_type="PG+EE"):
     state = checkpoint["execution_engine_state"]
     kwargs["verbose"] = verbose
     if model_type == "FiLM":
-        print("Loading FiLMedNet from " + path)
+        # print("Loading FiLMedNet from " + path)
         kwargs = get_updated_args(kwargs, FiLMedNet)
         model = FiLMedNet(**kwargs)
     else:
