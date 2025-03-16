@@ -35,10 +35,20 @@ unzip data/CLEVR_v1.0.zip -d data
 
 To preprocess the data from pngs to a h5 file for each train/val/test set, run the following code. The data will be the raw pixels, there are options to extract features with the option `--model resnet101` (1024x14x14 output), or to set a maximum number of X processed images `--max_images X` (check `extract_features.py`).
 ```bash
-bash scripts/extract_features.sh
+sh scripts/extract_features.sh
 ```
 
 To preprocess the questions, execute this script:
 ```bash
-bash scripts/preprocess_questions.sh
+sh scripts/preprocess_questions.sh
+```
+
+To train the model:
+```bash
+sh scripts/train/film.sh
+```
+
+To run the model (on `CLEVR_val_000017.png` by default):
+```bash
+python run_model.py --program_generator <FiLM Generator filepath> --execution_engine <FiLMed Network filepath>
 ```
