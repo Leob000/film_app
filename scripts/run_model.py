@@ -89,7 +89,8 @@ parser.add_argument("--betas_from", default=None)  # Load betas from file
 # If this is passed, then save all predictions to this file
 parser.add_argument("--output_h5", default=None)
 parser.add_argument("--output_preds", default=None)
-parser.add_argument("--output_viz_dir", default="img/")
+parser.add_argument("--visualize_attention", default=False, type=bool)
+parser.add_argument("--output_viz_dir", default="img/attention_visualizations/")
 parser.add_argument("--output_program_stats_dir", default=None)
 parser.add_argument("--streamlit", default=False, type=bool)
 
@@ -280,7 +281,7 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
         print(colored('Question: "%s"' % question_raw, "cyan"))
     print(colored(str(predicted_answer).capitalize(), "magenta"))
 
-    if interactive:
+    if interactive and not args.visualize_attention:
         return
 
     # Visualize Gradients w.r.t. output
@@ -288,15 +289,17 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
     cf_bn = ee.classifier[1](cf_conv)
     pre_pool = ee.classifier[2](cf_bn)
     pooled = ee.classifier[3](pre_pool)  # noqa: F841
-
-    pre_pool_max_per_c = pre_pool.max(2)[0].max(3)[0].expand_as(pre_pool)
+    
+    pre_pool_max_per_c = pre_pool.max(dim=2, keepdim=True)[0].max(dim=3, keepdim=True)[0].expand_as(pre_pool)
     pre_pool_masked = (pre_pool_max_per_c == pre_pool).float() * pre_pool
     pool_feat_locs = (pre_pool_masked > 0).float().sum(1)
     if args.debug_every <= 1:
         pdb.set_trace()
-
+    
     if args.output_viz_dir != "NA":
         viz_dir = args.output_viz_dir + question_raw + " " + predicted_answer
+        if not os.path.isdir(args.output_viz_dir):
+            os.mkdir(args.output_viz_dir)
         if not os.path.isdir(viz_dir):
             os.mkdir(viz_dir)
         args.viz_dir = viz_dir
@@ -495,9 +498,12 @@ def visualize(features, args, file_name=None):
     """
     save_file = os.path.join(args.viz_dir, file_name) if file_name is not None else None
     img_path = args.image
-
+    
+    # Add a batch dimension or a channel dimension if it's lacking (for pool_feat_locs for example)
+    if features.dim() == 3:
+        features = features.unsqueeze(0)
     # Scale feature map to [0, 1]
-    f_map = (features**2).mean(0).mean(1).squeeze().sqrt()
+    f_map = (features**2).mean(0).mean(0).squeeze().sqrt()
     f_map_shifted = f_map - f_map.min().expand_as(f_map)
     f_map_scaled = f_map_shifted / f_map_shifted.max().expand_as(f_map_shifted)
 
@@ -507,14 +513,14 @@ def visualize(features, args, file_name=None):
         img = imageio.imread(img_path, pilmode="RGB")
         orig_img_size = img.shape[:2]
 
-        alpha = (255 * f_map_scaled).round()
+        alpha = (255 * f_map_scaled).round().byte()
         alpha4d = alpha.unsqueeze(0).unsqueeze(0)
         alpha_upsampled = F.interpolate(
             alpha4d, size=orig_img_size, mode="bilinear", align_corners=False
         )
         alpha_upsampled = alpha_upsampled.squeeze(0).transpose(1, 0).transpose(1, 2)
         alpha_upsampled_np = alpha_upsampled.cpu().data.numpy()
-
+        
         imga = np.concatenate([img, alpha_upsampled_np], axis=2)
 
         if not save_file.lower().endswith(".png"):

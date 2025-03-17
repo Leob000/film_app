@@ -12,6 +12,7 @@ scripts/dev
 
 # Image files
 img/cst
+img/attention_visualizations/
 
 # Editor files
 *.DS_Store

@@ -2,6 +2,7 @@ import streamlit as st
 import subprocess
 import platform
 import os
+import time
 
 # Chose the python interpreter path
 current_os = platform.system()
@@ -30,11 +31,15 @@ with tab1:
         width=400,
     )
 
+    # Checkbox to visualize attention
+    visualize = st.checkbox("Visualize attention")
+    
     # Create a form so that hitting Enter submits the input
     with st.form(key="question_form"):
         user_input = st.text_input("Enter your question:")
         submit_button = st.form_submit_button("Submit")
 
+    
     if submit_button:
         # Launch the process (adjust parameters as needed)
         process = subprocess.Popen(
@@ -45,6 +50,8 @@ with tab1:
                 f"img/CLEVR_val_0000{img_number}.png",
                 "--streamlit",
                 "True",
+                "--visualize_attention",
+                str(visualize),
             ],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -54,6 +61,7 @@ with tab1:
         
         # Send the user input to the process and capture the output
         output, error = process.communicate(input = user_input)
+        output = output.strip() # Remove leading/trailing whitespace
 
         # Display the output
         st.subheader("Model Response:")
@@ -64,10 +72,13 @@ with tab1:
         #     st.subheader("Errors:")
         #     st.write(error)
 
-        # Display the image with attention
-        attention_img_path = f"img/{user_input} {output}/resnet101.png"
-        st.write(attention_img_path)
-        #st.image(attention_img_path, caption="Image with attention", width=400)
+        # Display the image with attention, if requested
+        if visualize:
+            attention_img_path = f"img/attention_visualizations/{user_input} {output}/pool-feature-locations.png"
+            # Wait for the image to be created
+            while not os.path.exists(attention_img_path):
+                time.sleep(1)
+            st.image(attention_img_path, caption="Image with attention", width=400)
 
 with tab2:
     epoch = st.slider("Epoch", 1, 20, 1)
