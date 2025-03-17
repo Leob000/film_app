@@ -1,8 +1,22 @@
 import streamlit as st
 import subprocess
+import platform
+import os
 
-# st.title("Language Model Interface")
-# TODO: Display error message if not data/best.pt
+# Chose the python interpreter path
+current_os = platform.system()
+if current_os == "Windows":
+    python_executable = ".venv\Scripts\python.exe"
+else:
+    python_executable = ".venv/bin/python"
+
+st.title("Feature-wise Linear Modulations")
+
+tab1, tab2 = st.tabs(["Visualizing", "Training"])
+
+# Display error message if not data/best.pt
+if not os.path.exists("data/best.pt"):
+    st.error("No model found at \"data/best.pt\". Please train or download the model")
 
 # Select and display the image with default image 17
 img_number = st.selectbox(
@@ -24,7 +38,7 @@ if submit_button:
     # Launch the process (adjust parameters as needed)
     process = subprocess.Popen(
         [
-            "python",
+            python_executable,
             "scripts/run_model.py",
             "--image",
             f"img/CLEVR_val_0000{img_number}.png",
@@ -36,9 +50,9 @@ if submit_button:
         stderr=subprocess.PIPE,
         text=True,
     )
-
+    
     # Send the user input to the process and capture the output
-    output, error = process.communicate(input=user_input)
+    output, error = process.communicate(input = user_input)
 
     # Display the output
     st.subheader("Model Response:")
@@ -48,3 +62,4 @@ if submit_button:
     # if error:
     #     st.subheader("Errors:")
     #     st.write(error)
+
