@@ -335,6 +335,8 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
             print(fn_str)
             if num_inputs == 0:
                 break
+    if interactive:
+        return
 
 
 def run_our_model_batch(args, pg, ee, loader, device):
