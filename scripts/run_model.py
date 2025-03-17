@@ -300,7 +300,9 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
         if not os.path.isdir(viz_dir):
             os.mkdir(viz_dir)
         args.viz_dir = viz_dir
-        print("Saving visualizations to " + args.viz_dir)
+        
+        if not args.streamlit:
+            print("Saving visualizations to " + args.viz_dir)
 
         # Backprop w.r.t. sum of output scores - What affected prediction most?
         ee.feats.register_hook(save_grad("stem"))

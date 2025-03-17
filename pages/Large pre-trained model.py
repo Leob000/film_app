@@ -14,52 +14,63 @@ st.title("Feature-wise Linear Modulations")
 
 tab1, tab2 = st.tabs(["Visualizing", "Training"])
 
-# Display error message if not data/best.pt
-if not os.path.exists("data/best.pt"):
-    st.error("No model found at \"data/best.pt\". Please train or download the model")
+with tab1:
+    # Display error message if not data/best.pt
+    if not os.path.exists("data/best.pt"):
+        st.error("No model found at \"data/best.pt\". Please train or download the model")
 
-# Select and display the image with default image 17
-img_number = st.selectbox(
-    "Select an image number:", [str(i) for i in range(10, 20)], index=7
-)
-st.image(
-    f"img/CLEVR_val_0000{img_number}.png",
-    caption=f"CLEVR_val_0000{img_number}.png",
-    # use_container_width=True,
-    width=400,
-)
-
-# Create a form so that hitting Enter submits the input
-with st.form(key="question_form"):
-    user_input = st.text_input("Enter your question:")
-    submit_button = st.form_submit_button("Submit")
-
-if submit_button:
-    # Launch the process (adjust parameters as needed)
-    process = subprocess.Popen(
-        [
-            python_executable,
-            "scripts/run_model.py",
-            "--image",
-            f"img/CLEVR_val_0000{img_number}.png",
-            "--streamlit",
-            "True",
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
+    # Select and display the image with default image 17
+    img_number = st.selectbox(
+        "Select an image number:", [str(i) for i in range(10, 20)], index=7
     )
-    
-    # Send the user input to the process and capture the output
-    output, error = process.communicate(input = user_input)
+    st.image(
+        f"img/CLEVR_val_0000{img_number}.png",
+        caption=f"CLEVR_val_0000{img_number}.png",
+        # use_container_width=True,
+        width=400,
+    )
 
-    # Display the output
-    st.subheader("Model Response:")
-    st.write(output)
+    # Create a form so that hitting Enter submits the input
+    with st.form(key="question_form"):
+        user_input = st.text_input("Enter your question:")
+        submit_button = st.form_submit_button("Submit")
 
-    # Optionally display any error messages
-    # if error:
-    #     st.subheader("Errors:")
-    #     st.write(error)
+    if submit_button:
+        # Launch the process (adjust parameters as needed)
+        process = subprocess.Popen(
+            [
+                python_executable,
+                "scripts/run_model.py",
+                "--image",
+                f"img/CLEVR_val_0000{img_number}.png",
+                "--streamlit",
+                "True",
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        
+        # Send the user input to the process and capture the output
+        output, error = process.communicate(input = user_input)
 
+        # Display the output
+        st.subheader("Model Response:")
+        st.write(output)
+
+        # Optionally display any error messages
+        # if error:
+        #     st.subheader("Errors:")
+        #     st.write(error)
+
+        # Display the image with attention
+        attention_img_path = f"img/{user_input} {output}/resnet101.png"
+        st.write(attention_img_path)
+        #st.image(attention_img_path, caption="Image with attention", width=400)
+
+with tab2:
+    epoch = st.slider("Epoch", 1, 20, 1)
+    model_choice = st.selectbox("Model", ["resnet", "raw"])
+    if st.button("Train"):
+        st.write(f"Training started with {model_choice} for {epoch} epochs")
