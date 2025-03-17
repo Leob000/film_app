@@ -3,6 +3,7 @@ import subprocess
 import platform
 import os
 import time
+import string
 
 # Chose the python interpreter path
 current_os = platform.system()
@@ -58,6 +59,11 @@ with tab1:
             stderr=subprocess.PIPE,
             text=True,
         )
+        
+        # Preprocess the user input
+        punctuation_removal = str.maketrans("", "", string.punctuation)
+        user_input = user_input.translate(punctuation_removal)
+        user_input = user_input.lower()
         
         # Send the user input to the process and capture the output
         output, error = process.communicate(input = user_input)
