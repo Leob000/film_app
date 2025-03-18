@@ -26,7 +26,15 @@
 - [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
 - [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
 
-# Get the data
+# Launch the streamlit app
+To launch the streamlit app, you must have a model `data/best.pt`, then run:
+```bash
+streamlit run Hello.py
+```
+
+# Running the models in details
+If you wish to run the models and modify parameters, follow these instructions.
+
 For each script, check the `.sh` and/or the `.py` associated file to modify parameters.
 To download the data, run:
 ```bash
