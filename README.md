@@ -2,19 +2,19 @@
 - [-] Rapport
 - Streamlit
     - [ ] Docu sphinx
-    - [ ] 2 Pages différentes
+    - [ ] 2 Pages différentes, attendre voir si dataset custom pour changer
     - [x] wget simple pour les poids
     - [ ] Gros modèle pré-entraîné
         - [x] Obtention des weights
         - [x] Streamlit poser questions sur image
+        - [x] Visualisation de ce que le MLP "voit"
+        - [ ] Phrases exemples, mots que le modèle connaît
         - [ ] Visualisation des histogrammes gamma/beta
         - [ ] Visualisation tSNE
-        - [x] Visualisation de ce que le MLP "voit"
     - [ ] Petit modèle, train sur CPU
-        - Avoir aussi le preprocessing réduit?
-        - Comment avoir un temps d'entraînement rapide? réduire architecture? réduire train/val dataset?
         - [ ] Streamlit train
         - [ ] Streamlit questions
+    - [ ] Dataset custom?
 - Bonus:
     - Zero-shot
     - Graph comparaison de performance sur jeux de donnée classique
