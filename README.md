@@ -8,7 +8,7 @@
         - [x] Obtention des weights
         - [x] Streamlit poser questions sur image
         - [x] Visualisation de ce que le MLP "voit"
-        - [ ] Phrases exemples, mots que le modèle connaît
+        - [x] Phrases exemples, mots que le modèle connaît
         - [ ] Visualisation des histogrammes gamma/beta
         - [ ] Visualisation tSNE
     - [ ] Petit modèle, train sur CPU
