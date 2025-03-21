@@ -2,12 +2,14 @@
 - [-] Rapport
 - Streamlit
     - [ ] Docu sphinx
+    - [ ] 2 Pages différentes
+    - [x] wget simple pour les poids
     - [ ] Gros modèle pré-entraîné
         - [x] Obtention des weights
-        - [ ] Streamlit poser questions sur image
+        - [x] Streamlit poser questions sur image
         - [ ] Visualisation des histogrammes gamma/beta
         - [ ] Visualisation tSNE
-        - [ ] Visualisation de ce que le MLP "voit"
+        - [x] Visualisation de ce que le MLP "voit"
     - [ ] Petit modèle, train sur CPU
         - Avoir aussi le preprocessing réduit?
         - Comment avoir un temps d'entraînement rapide? réduire architecture? réduire train/val dataset?
@@ -26,14 +28,24 @@
 - [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
 - [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
 
-# Launch the streamlit app
-To launch the streamlit app, you must have a model `data/best.pt`, then run:
+# Simple use
+## Download the pretrained model
+We pretrained a big model (3 FiLM layers, resnet101 with 1024 feature maps for the vision CNN model).
+To get the weights (in `data/best.pt`), run:
+
+```bash
+wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4nhnr6p8jwsnyiy14nd0&st=odj3a2ns" -O data/best.pt
+```
+
+## Streamlit app
+On the streamlit app, you can test the pretrained model on new images and see some visualisations, or you can train a new model.
+To launch the streamlit app, run:
 ```bash
 streamlit run Hello.py
 ```
 
-# Running the models in details
-If you wish to run the models and modify parameters, follow these instructions.
+# Detailed use
+If you wish to run the models in the terminal and modify parameters, follow these instructions.
 
 For each script, check the `.sh` and/or the `.py` associated file to modify parameters.
 To download the data, run:
