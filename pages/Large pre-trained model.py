@@ -10,7 +10,7 @@ current_os = platform.system()
 if current_os == "Windows":
     python_executable = ".venv\Scripts\python.exe"
 else:
-    python_executable = ".venv/bin/python"
+    python_executable = "python"
 
 st.title("Feature-wise Linear Modulations")
 
