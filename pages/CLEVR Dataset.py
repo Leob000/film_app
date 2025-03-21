@@ -33,11 +33,12 @@ with tab1:
     )
 
     # Checkbox to visualize attention
-    visualize = st.checkbox("Visualize attention")
+    visualize = st.checkbox("Visualize attention", value=True)
+
     
     # Create a form so that hitting Enter submits the input
     with st.form(key="question_form"):
-        user_input = st.text_input("Enter your question:")
+        user_input = st.text_input("Enter your question: (See the \"Hello\" page for help)")
         submit_button = st.form_submit_button("Submit")
 
     
@@ -84,7 +85,7 @@ with tab1:
             # Wait for the image to be created
             while not os.path.exists(attention_img_path):
                 time.sleep(1)
-            st.image(attention_img_path, caption="Image with attention", width=400)
+            st.image(attention_img_path, caption="Where the feature maps are active (before the MLP)", width=400)
 
 with tab2:
     epoch = st.slider("Epoch", 1, 20, 1)
