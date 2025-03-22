@@ -60,3 +60,13 @@ To create images, questions and answer in order to train the small model on stre
 ```bash
 sh faklevr_scripts/small_faklevr_dataset_creation.sh
 ```
+
+To preprocess images :
+```bash
+sh faklevr_scripts/faklevr_extract_features_raw.sh
+```
+
+To preprocess questions :
+```bash
+sh faklevr_scripts/faklevr_preprocess_questions.sh
+```

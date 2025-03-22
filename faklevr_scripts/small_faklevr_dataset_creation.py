@@ -87,16 +87,16 @@ def generate_questions_answers(shapes):
     # How many red shapes are there?
     # How many rectangles are there?
     # How many red rectangles are there?
-    questions_answers.append(("how many shapes are there", len(shapes)))
+    questions_answers.append(("how many shapes are there", str(len(shapes))))
     for color in ["red", "green", "blue"]:
         count = sum(1 for shape in shapes if shape[1] == color)
-        questions_answers.append((f"how many {color} shapes", count))
+        questions_answers.append((f"how many {color} shapes", str(count)))
         for shape_type in ['rectangle', 'ellipse', 'triangle']:
             count = sum(1 for shape in shapes if shape[0] == shape_type and shape[1] == color)
-            questions_answers.append((f"how many {color} {shape_type}s", count))
+            questions_answers.append((f"how many {color} {shape_type}s", str(count)))
     for shape_type in ['rectangle', 'ellipse', 'triangle']:
         count = sum(1 for shape in shapes if shape[0] == shape_type)
-        questions_answers.append((f"how many {shape_type}s", count))
+        questions_answers.append((f"how many {shape_type}s", str(count)))
 
     return(questions_answers)
 
@@ -151,8 +151,10 @@ def generate_dataset(num_images, width, height, num_min_shapes, num_max_shapes, 
         image, shapes = generate_image(width, height, num_shapes, max_shape_size)
         questions_answers = generate_questions_answers(shapes)
         idx_question = save_dataset(image, questions_answers, list_dict_questions, idx_image, idx_question, split, name)
+    final_dict = {"info": {"split": split, "name": name},
+                  "questions": list_dict_questions}
     with open(f"data/{name}/questions/{name}_{split}_{questions_filename}.json", 'w') as f:
-        json.dump(list_dict_questions, f)
+        json.dump(final_dict, f)
     return()
 
 if __name__ == "__main__":
