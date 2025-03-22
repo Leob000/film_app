@@ -14,6 +14,14 @@ parser.add_argument("--questions_filename", default="question", type=str)
 parser.add_argument("--max_shape_size", default=50, type=int)
 
 def generate_image(width, height, num_shapes, max_shape_size):
+    """generate an image with random shapes
+
+    Args:
+        width (int): image width
+        height (int): image height
+        num_shapes (int): number of shapes
+        max_shape_size (int): control the maximum size of a shape
+    """
     image = Image.new('RGB', (width, height), 'white')
     draw = ImageDraw.Draw(image)
 
@@ -67,6 +75,11 @@ def generate_image(width, height, num_shapes, max_shape_size):
 
 # Generate questions and answers based on the shapes in the image
 def generate_questions_answers(shapes):
+    """generate questions and answers based on the shapes in the image
+
+    Args:
+        shapes (list): list of shapes in the image (shape_type, color, coordinates)
+    """
     questions_answers = []
 
     # Questions :
@@ -93,6 +106,17 @@ def generate_questions_answers(shapes):
 #######################
 
 def save_dataset(image, questions_answers, list_dict_questions, idx_image, idx_question, split, name):
+    """For a given image, update the dictionary of questions and answers with the ones, 
+
+    Args:
+        image : PIL image
+        questions_answers (list): list of couples (question, answer)
+        list_dict_questions (list): list of dictionaries containing the questions and answers and other information
+        idx_image (int): image index
+        idx_question (int): question index
+        split (str): split name (train, val, test)
+        name (str): name of the dataset
+    """
     image_name = f"{name}_{split}_{"000000"[:(6-len(str(idx_image)))]+str(idx_image)}.png"
     image.save(f"data/{name}/images/{split}/{image_name}")    
     for question, answer in questions_answers:
@@ -107,6 +131,19 @@ def save_dataset(image, questions_answers, list_dict_questions, idx_image, idx_q
     return(idx_question)
     
 def generate_dataset(num_images, width, height, num_min_shapes, num_max_shapes, max_shape_size, split, name, questions_filename):
+    """Generate a dataset of images with shapes and questions and answers
+
+    Args:
+        num_images (int): number of images
+        width (int): image width
+        height (int): image height
+        num_min_shapes (int): minimal number of shapes per image
+        num_max_shapes (int): maximal number of shapes per image
+        max_shape_size (int): control the maximum size of a shape
+        split (str): split name (train, val, test)
+        name (str): name of the dataset
+        questions_filename (str): name of the file containing the questions
+    """
     idx_question = 0
     list_dict_questions = []
     for idx_image in range(num_images):

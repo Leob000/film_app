@@ -22,13 +22,12 @@ else:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_image_dir", required=True)
-parser.add_argument("--max_images", default=None, type=int)
 parser.add_argument("--output_h5_file", required=True)
 
 parser.add_argument("--image_height", default=224, type=int)
 parser.add_argument("--image_width", default=224, type=int)
 
-parser.add_argument("--model", default="none")
+parser.add_argument("--model", default="resnet101", type=str)
 parser.add_argument("--model_stage", default=3, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
 
@@ -87,8 +86,6 @@ def main(args):
     input_paths.sort(key=lambda x: x[1])
     assert len(idx_set) == len(input_paths)
     assert min(idx_set) == 0 and max(idx_set) == len(idx_set) - 1
-    if args.max_images is not None:
-        input_paths = input_paths[: args.max_images]
     print(input_paths[0])
     print(input_paths[-1])
 
