@@ -54,3 +54,24 @@ To run the model (on `CLEVR_val_000017.png` by default):
 ```bash
 sh scripts/run_model.sh
 ```
+
+# Get the small streamlit model data
+To create images, questions and answer in order to train the small model on streamlit, run
+```bash
+sh faklevr_scripts/small_faklevr_dataset_creation.sh
+```
+
+To preprocess images :
+```bash
+sh faklevr_scripts/faklevr_extract_features_raw.sh
+```
+
+To preprocess questions :
+```bash
+sh faklevr_scripts/faklevr_preprocess_questions.sh
+```
+
+# Train the small streamlit model
+```bash
+sh scripts/train/film_faklevr_raw.sh
+```
