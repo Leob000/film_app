@@ -11,10 +11,10 @@ python scripts/train_model.py \
   --model_type FiLM \
   --num_iterations 2000000 \
   --print_verbose_every 2000000 \
-  --checkpoint_every 2500 \
+  --checkpoint_every 1250 \
   --record_loss_every 100 \
   --num_val_samples 16000 \
-  --feature_dim 3,224,224 \
+  --feature_dim 3,56,56 \
   --optimizer Adam \
   --learning_rate 3e-4 \
   --batch_size 64 \
@@ -29,14 +29,14 @@ python scripts/train_model.py \
   --weight_decay 1e-5 \
   --rnn_num_layers 1 \
   --rnn_wordvec_dim 100 \
-  --rnn_hidden_dim 1024 \
+  --rnn_hidden_dim 512 \
   --rnn_output_batchnorm 0 \
   --classifier_downsample maxpoolfull \
-  --classifier_proj_dim 256 \
-  --classifier_fc_dims 512 \
+  --classifier_proj_dim 128 \
+  --classifier_fc_dims 256 \
   --module_input_proj 1 \
   --module_residual 1 \
-  --module_dim 64 \
+  --module_dim 32 \
   --module_dropout 0e-2 \
   --module_stem_kernel_size 3 \
   --module_kernel_size 3 \
