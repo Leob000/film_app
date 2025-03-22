@@ -70,3 +70,8 @@ To preprocess questions :
 ```bash
 sh faklevr_scripts/faklevr_preprocess_questions.sh
 ```
+
+# Train the small streamlit model
+```bash
+sh scripts/train/film_faklevr_raw.sh
+```
