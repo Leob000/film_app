@@ -1,0 +1,53 @@
+#!/bin/bash
+
+checkpoint_path="data/film_faklevr_raw.pt"
+log_path="data/film_faklevr_raw.log"
+python scripts/train_model.py \
+  --checkpoint_path $checkpoint_path \
+  --train_question_h5 data/faklevr/train_questions.h5 \
+  --train_features_h5 data/faklevr/train_features_raw.h5 \
+  --val_question_h5 data/faklevr/val_questions.h5 \
+  --val_features_h5 data/faklevr/val_features_raw.h5 \
+  --model_type FiLM \
+  --num_iterations 2000000 \
+  --print_verbose_every 2000000 \
+  --checkpoint_every 1250 \
+  --record_loss_every 100 \
+  --num_val_samples 16000 \
+  --feature_dim 3,56,56 \
+  --optimizer Adam \
+  --learning_rate 3e-4 \
+  --batch_size 64 \
+  --use_coords 1 \
+  --module_stem_batchnorm 1 \
+  --module_stem_num_layers 1 \
+  --module_batchnorm 1 \
+  --classifier_batchnorm 1 \
+  --bidirectional 0 \
+  --decoder_type linear \
+  --encoder_type gru \
+  --weight_decay 1e-5 \
+  --rnn_num_layers 1 \
+  --rnn_wordvec_dim 100 \
+  --rnn_hidden_dim 512 \
+  --rnn_output_batchnorm 0 \
+  --classifier_downsample maxpoolfull \
+  --classifier_proj_dim 128 \
+  --classifier_fc_dims 256 \
+  --module_input_proj 1 \
+  --module_residual 1 \
+  --module_dim 32 \
+  --module_dropout 0e-2 \
+  --module_stem_kernel_size 3 \
+  --module_kernel_size 3 \
+  --module_batchnorm_affine 0 \
+  --module_num_layers 1 \
+  --num_modules 2 \
+  --condition_pattern 1,1,1,1 \
+  --gamma_option linear \
+  --gamma_baseline 1 \
+  --use_gamma 1 \
+  --use_beta 1 \
+  --condition_method bn-film \
+  --program_generator_parameter_efficient 1 \
+  | tee $log_path
