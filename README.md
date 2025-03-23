@@ -15,21 +15,14 @@
         - [ ] Streamlit train
         - [ ] Streamlit questions
     - [ ] Dataset custom?
-- Bonus:
-    - Zero-shot
-    - Graph comparaison de performance sur jeux de donnée classique
-
-# Requirements
-- Python 3.12
-- Other dependencies listed in `requirements.txt`
-
-# References
-- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
-- [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
-- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
 
 # Simple use
-## Download the pretrained model
+## Requirements
+### Python and packages
+- Python 3.12
+- Other dependencies listed in `requirements.txt`, run `pip install -r requirements.txt`.
+
+### Download our pre-trained model for the CLEVR dataset
 We pretrained a big model (3 FiLM layers, resnet101 with 1024 feature maps for the vision CNN model).
 To get the weights (in `data/best.pt`), run:
 
@@ -37,8 +30,28 @@ To get the weights (in `data/best.pt`), run:
 wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4nhnr6p8jwsnyiy14nd0&st=odj3a2ns" -O data/best.pt
 ```
 
+### To train a new model on our custom simpler dataset
+To create images, questions and answer in order to train the small model on streamlit, run
+```bash
+sh faklevr_scripts/small_faklevr_dataset_creation.sh
+```
+
+To preprocess images :
+```bash
+sh faklevr_scripts/faklevr_extract_features_raw.sh
+```
+
+To preprocess questions :
+```bash
+sh faklevr_scripts/faklevr_preprocess_questions.sh
+```
+
+# Train the small streamlit model
+```bash
+sh scripts/train/film_faklevr_raw.sh
+```
+
 ## Streamlit app
-On the streamlit app, you can test the pretrained model on new images and see some visualisations, or you can train a new model.
 To launch the streamlit app, run:
 ```bash
 streamlit run Hello.py
@@ -76,23 +89,7 @@ To run the model (on `CLEVR_val_000017.png` by default):
 sh scripts/run_model.sh
 ```
 
-# Get the small streamlit model data
-To create images, questions and answer in order to train the small model on streamlit, run
-```bash
-sh faklevr_scripts/small_faklevr_dataset_creation.sh
-```
-
-To preprocess images :
-```bash
-sh faklevr_scripts/faklevr_extract_features_raw.sh
-```
-
-To preprocess questions :
-```bash
-sh faklevr_scripts/faklevr_preprocess_questions.sh
-```
-
-# Train the small streamlit model
-```bash
-sh scripts/train/film_faklevr_raw.sh
-```
+# References
+- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
+- [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
+- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
