@@ -129,7 +129,7 @@ with tab2:
             )
 
         # importation and processing of the parameters values for the three resblocks
-        parameters = torch.load("img/params.pt")
+        parameters = torch.load(os.path.join("img", "params.pt"))
         beta = []
         gamma = []
         for i in range(3):
