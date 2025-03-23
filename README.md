@@ -31,22 +31,12 @@ wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4n
 ```
 
 ### To train a new model on our custom simpler dataset
-To create images, questions and answer in order to train the small model on streamlit, run
+To create images, questions and answers in order to train the small model on streamlit, run:
 ```bash
-sh faklevr_scripts/small_faklevr_dataset_creation.sh
+sh faklevr_scripts/favlevr_bundle.sh
 ```
 
-To preprocess images :
-```bash
-sh faklevr_scripts/faklevr_extract_features_raw.sh
-```
-
-To preprocess questions :
-```bash
-sh faklevr_scripts/faklevr_preprocess_questions.sh
-```
-
-# Train the small streamlit model
+Train the small streamlit model (it takes around 20-25 minutes on CPU):
 ```bash
 sh scripts/train/film_faklevr_raw.sh
 ```
