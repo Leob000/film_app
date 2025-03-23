@@ -99,8 +99,35 @@ programs = {}  # NOTE: Useful for zero-shot program manipulation when in debug m
 
 
 def main(args):
-    # Determine device: if use_gpu flag is set then use CUDA if available,
-    # else try MPS (for newer Macs) and fall back to CPU.
+    """
+    Main function to execute the model based on the provided arguments.
+    Args:
+        args (argparse.Namespace): Parsed command-line arguments containing the following attributes:
+            - use_gpu (bool): Flag to indicate whether to use GPU or not.
+            - streamlit (bool): Flag to indicate whether the script is running in Streamlit mode.
+            - baseline_model (str, optional): Path to the baseline model file.
+            - vocab_json (str, optional): Path to the vocabulary JSON file.
+            - program_generator (str, optional): Path to the program generator model file.
+            - execution_engine (str, optional): Path to the execution engine model file.
+            - model_type (str, optional): Type of the model (e.g., 'LSTM', 'Transformer').
+            - question (str, optional): A single question to be processed.
+            - image (str, optional): Path to the image file for single-question processing.
+            - input_question_h5 (str, optional): Path to the HDF5 file containing input questions.
+            - input_features_h5 (str, optional): Path to the HDF5 file containing input features.
+            - batch_size (int, optional): Batch size for processing questions.
+            - num_samples (int, optional): Number of samples to process (if specified).
+            - family_split_file (str, optional): Path to a JSON file specifying question families.
+    Returns:
+        None
+    Behavior:
+        - Initializes the device (CPU, CUDA, or MPS) based on the `use_gpu` flag and availability.
+        - Loads the baseline model or program generator and execution engine based on the provided arguments.
+        - Processes a single question and image if both are provided.
+        - Enters an interactive mode if only an image is provided, allowing the user to input questions.
+        - Processes a batch of questions and features if input HDF5 files are provided.
+        - Prints relevant information and errors based on the provided arguments.
+    """
+
     if args.use_gpu:
         device = torch.device(
             "cuda"
@@ -170,6 +197,21 @@ def main(args):
 
 
 def extract_image_features(args, device):
+    """
+    Extracts image features using a specified Convolutional Neural Network (CNN) model.
+    Args:
+        args: An object containing the following attributes:
+            - streamlit (bool): Flag to indicate if the function is being used in a Streamlit application.
+            - image (str): Path to the input image file.
+            - image_height (int): Desired height of the image after resizing.
+            - image_width (int): Desired width of the image after resizing.
+            - cnn_model (str): Name of the CNN model to use for feature extraction. If "none", no CNN is used.
+        device: The PyTorch device (e.g., "cpu" or "cuda") to use for computations.
+    Returns:
+        torch.Tensor: A tensor containing the extracted image features. If no CNN is used, the tensor contains
+                      the normalized image data.
+    """
+
     # Build the CNN to use for feature extraction
     if not args.streamlit:
         print("Extracting image features...")
@@ -187,10 +229,15 @@ def extract_image_features(args, device):
 
     # Transpose image dimensions to (1, channels, height, width)
     img = img.transpose(2, 0, 1)[None]
-    
+
     if args.cnn_model.lower() == "none":
-        return torch.tensor(img.astype(np.float32) / 255.0, dtype=torch.float32, device=device, requires_grad=True)
-    
+        return torch.tensor(
+            img.astype(np.float32) / 255.0,
+            dtype=torch.float32,
+            device=device,
+            requires_grad=True,
+        )
+
     cnn = build_cnn(args, device)
 
     # Normalize the image
@@ -207,6 +254,26 @@ def extract_image_features(args, device):
 
 
 def run_single_example(args, model, device, question_raw, feats_var=None):
+    """
+    Run a single example through the model to generate predictions and optionally visualize results.
+    Args:
+        args (Namespace): A namespace object containing various configuration parameters.
+        model (torch.nn.Module or tuple): The model or a tuple of models (program generator and execution engine).
+        device (torch.device): The device (CPU or GPU) to run the model on.
+        question_raw (str): The raw question string to be processed and answered.
+        feats_var (torch.Tensor, optional): Precomputed image features. If None, features will be extracted.
+    Returns:
+        None: Prints the predicted answer and optionally visualizes intermediate results.
+              If in interactive mode and visualization is not enabled, returns early.
+    Notes:
+        - The function tokenizes the input question, encodes it, and runs it through the model.
+        - If the model is a tuple, it handles program generation and execution separately.
+        - Results are printed, including probabilities for each possible answer.
+        - If visualization is enabled, gradients and intermediate activations are visualized.
+        - Debugging breakpoints (`pdb.set_trace()`) are included for debugging purposes.
+        - Handles CLEVR-specific vocabulary enforcement if specified in `args`.
+    """
+
     interactive = feats_var is not None
     if not interactive:
         feats_var = extract_image_features(args, device)
@@ -293,13 +360,17 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
     cf_bn = ee.classifier[1](cf_conv)
     pre_pool = ee.classifier[2](cf_bn)
     pooled = ee.classifier[3](pre_pool)  # noqa: F841
-    
-    pre_pool_max_per_c = pre_pool.max(dim=2, keepdim=True)[0].max(dim=3, keepdim=True)[0].expand_as(pre_pool)
+
+    pre_pool_max_per_c = (
+        pre_pool.max(dim=2, keepdim=True)[0]
+        .max(dim=3, keepdim=True)[0]
+        .expand_as(pre_pool)
+    )
     pre_pool_masked = (pre_pool_max_per_c == pre_pool).float() * pre_pool
     pool_feat_locs = (pre_pool_masked > 0).float().sum(1)
     if args.debug_every <= 1:
         pdb.set_trace()
-    
+
     if args.output_viz_dir != "NA":
         viz_dir = args.output_viz_dir + question_raw + " " + predicted_answer
         if not os.path.isdir(args.output_viz_dir):
@@ -307,7 +378,7 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
         if not os.path.isdir(viz_dir):
             os.mkdir(viz_dir)
         args.viz_dir = viz_dir
-        
+
         if not args.streamlit:
             print("Saving visualizations to " + args.viz_dir)
 
@@ -504,7 +575,7 @@ def visualize(features, args, file_name=None):
     """
     save_file = os.path.join(args.viz_dir, file_name) if file_name is not None else None
     img_path = args.image
-    
+
     # Add a batch dimension or a channel dimension if it's lacking (for pool_feat_locs for example)
     if features.dim() == 3:
         features = features.unsqueeze(0)
@@ -526,7 +597,7 @@ def visualize(features, args, file_name=None):
         )
         alpha_upsampled = alpha_upsampled.squeeze(0).transpose(1, 0).transpose(1, 2)
         alpha_upsampled_np = alpha_upsampled.cpu().data.numpy()
-        
+
         imga = np.concatenate([img, alpha_upsampled_np], axis=2)
 
         if not save_file.lower().endswith(".png"):

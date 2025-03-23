@@ -5,6 +5,7 @@ import os
 import time
 import string
 
+
 # Chose the python interpreter path
 current_os = platform.system()
 if current_os == "Windows":
@@ -12,7 +13,7 @@ if current_os == "Windows":
 else:
     python_executable = "python"
 
-st.title("CLEVR Dataset")
+st.title('Small "Faklevr" Dataset')
 
 tab1, tab2 = st.tabs(["Help", "Visualizing"])
 
@@ -22,35 +23,37 @@ with tab1:
     # if st.button("Train"):
     #     st.write(f"Training started with {model_choice} for {epoch} epochs")
     st.markdown(
-        # There is the ability to train your own model, but the results will probably be poor unless trained on a GPU during a long time. The model will be trained using Cuda if available, else Mps (for M-series Macs), else on CPU.
         """
-    We have pretrained a model, see `README.md` to get the weights. Our pre-trained model uses the default hyperparameters from the FiLM paper, except that we use 3 FiLM layers, and resnet101 with 1024 features map as the vision CNN model. Our model was trained during around 15 hours, using a M2 Mac mini with 16 GPU cores.
+    This model is trained using the `film_faklevr_raw.sh` script, as per the `README.md` instructions. The training takes around 20-25 minutes on CPU.
 
     #### Help for questions
-    Here are a few exemples of questions the model can answer:
-    - How many brown objects are there?
-    - What is the size of the object left of the red ball?
-    - Is the yellow object metallic?
+    As the other model, this model is trained only on certain words, and will not understand words he has not seen during training.
+    However, this model is trained on way fewer questions and words, to speed up training.
+    
+    Here are all the questions the model as seen during training:
+    - How many [red, green, blue] shapes are there?
+    - How many [rectangle, ellipse, triangle]s are there?
+    - How many [red, green, blue] [rectangle, ellipse, triangle]s are there?
 
-    The model is trained only on certain words, and will not understand words he has not seen during training.
     Here is the full list of words it has seen:
-
-    "Are, Do, Does, How, Is, The, There, What, a, an, and, another, any, anything, are, as, ball, balls, behind, big, block, blocks, blue, both, brown, color, cube, cubes, cyan, cylinder, cylinders, does, either, else, equal, fewer, front, gray, greater, green, has, have, how, in, is, it, its, large, left, less, made, many, material, matte, metal, metallic, more, number, object, objects, of, on, or, other, purple, red, right, rubber, same, shape, shiny, side, size, small, sphere, spheres, than, that, the, there, thing, things, tiny, to, visible, what, yellow"
-    """
+    "are, blue, ellipses, green, how, many, rectangles, red, shapes, there, triangles"
+        """
     )
 
 with tab2:
     # Display error message if not data/best.pt
-    if not os.path.exists("data/best.pt"):
-        st.error('No model found at "data/best.pt". Please train or download the model')
+    if not os.path.exists("data/film_faklevr_raw.pt"):
+        st.error(
+            'No model found at "data/film_faklevr_raw.pt". Please train or download the model'
+        )
 
     # Select and display the image with default image 17
     img_number = st.selectbox(
-        "Select an image number:", [str(i) for i in range(10, 20)], index=7
+        "Select an image number:", [str(i) for i in range(10, 20)], index=1
     )
     st.image(
-        f"img/CLEVR_val_0000{img_number}.png",
-        caption=f"CLEVR_val_0000{img_number}.png",
+        f"data/faklevr/images/test/faklevr_test_0000{img_number}.png",
+        caption=f"faklevr_test_0000{img_number}.png",
         # use_container_width=True,
         width=400,
     )
@@ -61,13 +64,13 @@ with tab2:
         [
             "None",
             "conv-stem",
-            "resnet101",
+            "none",
             "pool-feature-locations",
             "pre-pool",
             "grad-conv-stem",
         ]
-        + [f"grad-resblock{i}" for i in range(3)]
-        + [f"resblock{i}" for i in range(3)],
+        + [f"grad-resblock{i}" for i in range(2)]
+        + [f"resblock{i}" for i in range(2)],
         index=3,
     )
 
@@ -82,12 +85,24 @@ with tab2:
             [
                 python_executable,
                 "scripts/run_model.py",
+                "--program_generator",
+                "data/film_faklevr_raw.pt",
+                "--execution_engine",
+                "data/film_faklevr_raw.pt",
                 "--image",
-                f"img/CLEVR_val_0000{img_number}.png",
+                f"data/faklevr/images/test/faklevr_test_0000{img_number}.png",
                 "--streamlit",
                 "True",
                 "--visualize_attention",
                 str(attention_to_plot != "None"),
+                "--output_viz_dir",
+                "data/faklevr/images/attention_visualizations/",
+                "--image_width",
+                "56",
+                "--image_height",
+                "56",
+                "--cnn_model",
+                "none",
             ],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -115,7 +130,7 @@ with tab2:
 
         # Display the image with attention, if requested
         if attention_to_plot != "None":
-            attention_img_path = f"img/attention_visualizations/{user_input} {output}/{attention_to_plot}.png"
+            attention_img_path = f"data/faklevr/images/attention_visualizations/{user_input} {output}/{attention_to_plot}.png"
             # Wait for the image to be created
             while not os.path.exists(attention_img_path):
                 time.sleep(1)

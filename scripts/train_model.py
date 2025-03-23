@@ -197,6 +197,36 @@ parser.add_argument("--time", default=0, type=int)
 
 
 def main(args):
+    """
+    Main function to train a model using the specified arguments.
+    Args:
+        args (Namespace): A namespace object containing the following attributes:
+            - randomize_checkpoint_path (int): If 1, appends a random number to the checkpoint path.
+            - checkpoint_path (str): Path to save model checkpoints.
+            - vocab_json (str): Path to the vocabulary JSON file.
+            - use_local_copies (int): If 1, copies dataset files to a local temporary directory.
+            - train_question_h5 (str): Path to the training questions H5 file.
+            - train_features_h5 (str): Path to the training features H5 file.
+            - val_question_h5 (str): Path to the validation questions H5 file.
+            - val_features_h5 (str): Path to the validation features H5 file.
+            - family_split_file (str or None): Path to a JSON file specifying question families for splitting.
+            - batch_size (int): Batch size for training and validation.
+            - shuffle_train_data (int): If 1, shuffles the training data.
+            - num_train_samples (int or None): Maximum number of training samples to use.
+            - num_val_samples (int or None): Maximum number of validation samples to use.
+            - loader_num_workers (int): Number of worker threads for data loading.
+            - cleanup_local_copies (int): If 1, removes temporary local copies of dataset files after training.
+    Returns:
+        None
+    Notes:
+        - The function determines the device to use (CUDA, MPS, or CPU) based on availability.
+        - If `randomize_checkpoint_path` is set, a random number is appended to the checkpoint path.
+        - If `use_local_copies` is set, dataset files are copied to a temporary directory for faster access.
+        - The function initializes data loaders for training and validation and starts the training loop.
+        - Temporary files are cleaned up if both `use_local_copies` and `cleanup_local_copies` are set to 1.
+        - The current date and time are printed at the end of the function.
+    """
+
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -263,6 +293,50 @@ def main(args):
 
 
 def train_loop(args, train_loader, val_loader, device):
+    """
+    Train a model using the specified training and validation data loaders.
+    This function supports multiple model types, including program generators,
+    execution engines, and baseline models. It trains the model for a specified
+    number of iterations, evaluates performance on training and validation sets,
+    and saves checkpoints during training.
+    Args:
+        args (argparse.Namespace): Arguments containing hyperparameters and
+            configuration options for training, such as model type, optimizer,
+            learning rate, and checkpoint paths.
+        train_loader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        val_loader (torch.utils.data.DataLoader): DataLoader for the validation dataset.
+        device (torch.device): The device (CPU or GPU) to use for training.
+    Returns:
+        None
+    Key Variables:
+        - program_generator: The program generator model (if applicable).
+        - execution_engine: The execution engine model (if applicable).
+        - baseline_model: The baseline model (if applicable).
+        - pg_optimizer, ee_optimizer, baseline_optimizer: Optimizers for the respective models.
+        - loss_fn: The loss function used for training (CrossEntropyLoss).
+        - stats: Dictionary to track training and validation statistics, including
+          losses, accuracies, and the best validation accuracy.
+        - t: Iteration counter.
+        - epoch: Epoch counter.
+        - reward_moving_average: Moving average of rewards for reinforcement learning.
+    Training Workflow:
+        1. Initialize models, optimizers, and loss function based on the specified model type.
+        2. Iterate through the training data for the specified number of iterations.
+        3. Compute loss and update model parameters using backpropagation.
+        4. Periodically evaluate training and validation accuracy.
+        5. Save checkpoints containing model states and training statistics.
+    Supported Model Types:
+        - "PG": Program Generator
+        - "EE": Execution Engine
+        - "PG+EE": Combined Program Generator and Execution Engine
+        - "FiLM": FiLM-based model
+        - "LSTM", "CNN+LSTM", "CNN+LSTM+SA": Baseline models
+    Notes:
+        - Checkpoints are saved to the path specified in `args.checkpoint_path`.
+        - Training and validation accuracy are logged periodically.
+        - Supports reinforcement learning for "PG+EE" and "FiLM" models.
+    """
+
     vocab = utils.load_vocab(args.vocab_json)
     program_generator, pg_kwargs, pg_optimizer = None, None, None
     execution_engine, ee_kwargs, ee_optimizer = None, None, None
@@ -705,6 +779,36 @@ def set_mode(mode, models):
 def check_accuracy(
     args, program_generator, execution_engine, baseline_model, loader, device
 ):
+    """
+    Evaluate the accuracy of a model on a given dataset.
+    This function evaluates the accuracy of different model types (e.g., PG, EE, PG+EE, FiLM,
+    LSTM-based models) by comparing predictions to ground-truth answers. It supports various
+    model architectures and handles both program generation and execution.
+    Args:
+        args (Namespace): A namespace containing model configuration and evaluation parameters.
+                            Must include `model_type`, `vocab_json`, and optionally `num_val_samples`.
+        program_generator (nn.Module): The program generator model, used for generating programs
+                                        from questions (if applicable).
+        execution_engine (nn.Module): The execution engine model, used for executing programs
+                                        on features (if applicable).
+        baseline_model (nn.Module): The baseline model, used for direct question-to-answer
+                                    predictions (if applicable).
+        loader (DataLoader): A DataLoader providing batches of data for evaluation. Each batch
+                                should contain questions, features, answers, and programs.
+        device (torch.device): The device (CPU or GPU) on which the models and data are located.
+    Returns:
+        float: The accuracy of the model on the dataset, computed as the ratio of correct
+                predictions to total samples evaluated.
+    Notes:
+        - The function sets the models to evaluation mode during accuracy computation and
+            restores them to training mode afterward.
+        - For program generation models (e.g., PG), accuracy is computed by comparing generated
+            programs to ground-truth programs.
+        - For other models, accuracy is computed by comparing predicted answers to ground-truth
+            answers.
+        - If `args.num_val_samples` is specified, evaluation stops after processing the specified
+            number of samples.
+    """
     set_mode("eval", [program_generator, execution_engine, baseline_model])
     num_correct, num_samples = 0, 0
     for batch in loader:
