@@ -10,8 +10,8 @@ python scripts/train_model.py \
   --val_features_h5 data/faklevr/val_features_raw.h5 \
   --vocab_json data/faklevr/vocab.json \
   --model_type FiLM \
-  --num_iterations 2502 \
-  --print_verbose_every 2502 \
+  --num_iterations 1251 \
+  --print_verbose_every 1251 \
   --checkpoint_every 1250 \
   --record_loss_every 100 \
   --num_val_samples 16000 \

@@ -2,31 +2,55 @@
 - [-] Rapport
 - Streamlit
     - [ ] Docu sphinx
+    - [ ] 2 Pages différentes, attendre voir si dataset custom pour changer
+    - [x] wget simple pour les poids
     - [ ] Gros modèle pré-entraîné
         - [x] Obtention des weights
-        - [ ] Streamlit poser questions sur image
+        - [x] Streamlit poser questions sur image
+        - [x] Visualisation de ce que le MLP "voit"
+        - [x] Phrases exemples, mots que le modèle connaît
         - [ ] Visualisation des histogrammes gamma/beta
         - [ ] Visualisation tSNE
-        - [ ] Visualisation de ce que le MLP "voit"
     - [ ] Petit modèle, train sur CPU
-        - Avoir aussi le preprocessing réduit?
-        - Comment avoir un temps d'entraînement rapide? réduire architecture? réduire train/val dataset?
         - [ ] Streamlit train
         - [ ] Streamlit questions
-- Bonus:
-    - Zero-shot
-    - Graph comparaison de performance sur jeux de donnée classique
+    - [ ] Dataset custom?
 
-# Requirements
+# Simple use
+## Requirements
+### Python and packages
 - Python 3.12
-- Other dependencies listed in `requirements.txt`
+- Other dependencies listed in `requirements.txt`, run `pip install -r requirements.txt`.
 
-# References
-- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
-- [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
-- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
+### Download our pre-trained model for the CLEVR dataset
+We pretrained a big model (3 FiLM layers, resnet101 with 1024 feature maps for the vision CNN model).
+To get the weights (in `data/best.pt`), run:
 
-# Get the data
+```bash
+wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4nhnr6p8jwsnyiy14nd0&st=odj3a2ns" -O data/best.pt
+```
+
+### To train a new model on our custom simpler dataset
+To create images, questions and answers in order to train the small model on streamlit, run:
+```bash
+sh faklevr_scripts/favlevr_bundle.sh
+```
+
+Train the small streamlit model (it takes around 20-25 minutes on CPU): (possible to change training parameters in the script)
+```bash
+sh scripts/train/film_faklevr_raw.sh
+```
+
+## Streamlit app
+To launch the streamlit app, run:
+```bash
+streamlit run Hello.py
+```
+
+# Detailed use
+## CLEVR Dataset
+If you wish to run the models in the terminal and modify parameters, follow these instructions.
+
 For each script, check the `.sh` and/or the `.py` associated file to modify parameters.
 To download the data, run:
 ```bash
@@ -55,23 +79,7 @@ To run the model (on `CLEVR_val_000017.png` by default):
 sh scripts/run_model.sh
 ```
 
-# Get the small streamlit model data
-To create images, questions and answer in order to train the small model on streamlit, run
-```bash
-sh faklevr_scripts/small_faklevr_dataset_creation.sh
-```
-
-To preprocess images :
-```bash
-sh faklevr_scripts/faklevr_extract_features_raw.sh
-```
-
-To preprocess questions :
-```bash
-sh faklevr_scripts/faklevr_preprocess_questions.sh
-```
-
-# Train the small streamlit model
-```bash
-sh scripts/train/film_faklevr_raw.sh
-```
+# References
+- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
+- [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
+- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)

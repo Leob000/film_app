@@ -5,24 +5,14 @@ st.set_page_config(
     page_icon="👋",
 )
 
-st.write("# Welcome to Streamlit! 👋")
+st.write("# Welcome to our application! 👋")
 
-st.sidebar.success("Select a demo above.")
+st.sidebar.success("Select a dataset above.")
 
 st.markdown(
     """
-    Streamlit is an open-source app framework built specifically for
-    Machine Learning and Data Science projects.
-    **👈 Select a demo from the sidebar** to see some examples
-    of what Streamlit can do!
-    ### Want to learn more?
-    - Check out [streamlit.io](https://streamlit.io)
-    - Jump into our [documentation](https://docs.streamlit.io)
-    - Ask a question in our [community
-        forums](https://discuss.streamlit.io)
-    ### See more complex demos
-    - Use a neural net to [analyze the Udacity Self-driving Car Image
-        Dataset](https://github.com/streamlit/demo-self-driving)
-    - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
+    For this application, two datasets are available:
+    - The first dataset is CLEVR, the one from the paper. The model used for this is a pretrained model, similar to the one used in the paper.
+    - The other dataset is Faklevr, a custom dataset created by us. It uses simple, low resolution 2D images instead of 3D ones, and greatly limits the question types the model as seen during training. It also uses raw pixels for training, instead of having the images pre processed by a visual CNN like resnet. All this greatly reduce training time, making it possible to get decent results training less than an hour on CPU.
 """
 )
