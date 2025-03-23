@@ -1,21 +1,3 @@
-# Todo
-- [-] Rapport
-- Streamlit
-    - [ ] Docu sphinx
-    - [ ] 2 Pages différentes, attendre voir si dataset custom pour changer
-    - [x] wget simple pour les poids
-    - [ ] Gros modèle pré-entraîné
-        - [x] Obtention des weights
-        - [x] Streamlit poser questions sur image
-        - [x] Visualisation de ce que le MLP "voit"
-        - [x] Phrases exemples, mots que le modèle connaît
-        - [ ] Visualisation des histogrammes gamma/beta
-        - [ ] Visualisation tSNE
-    - [ ] Petit modèle, train sur CPU
-        - [ ] Streamlit train
-        - [ ] Streamlit questions
-    - [ ] Dataset custom?
-
 # Simple use
 ## Requirements
 ### Python and packages
