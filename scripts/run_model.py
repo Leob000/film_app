@@ -173,7 +173,6 @@ def extract_image_features(args, device):
     # Build the CNN to use for feature extraction
     if not args.streamlit:
         print("Extracting image features...")
-    cnn = build_cnn(args, device)
 
     # Load and preprocess the image
     img_size = (args.image_height, args.image_width)
@@ -188,6 +187,11 @@ def extract_image_features(args, device):
 
     # Transpose image dimensions to (1, channels, height, width)
     img = img.transpose(2, 0, 1)[None]
+    
+    if args.cnn_model.lower() == "none":
+        return torch.tensor(img.astype(np.float32) / 255.0, dtype=torch.float32, device=device, requires_grad=True)
+    
+    cnn = build_cnn(args, device)
 
     # Normalize the image
     mean = np.array([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1)
@@ -315,7 +319,7 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
         scores_sum.backward()
 
         # Visualizations!
-        visualize(feats_var, args, "resnet101")
+        visualize(feats_var, args, args.cnn_model)
         visualize(ee.feats, args, "conv-stem")
         visualize(grads["stem"], args, "grad-conv-stem")
         for i in range(ee.num_modules):

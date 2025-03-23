@@ -8,9 +8,10 @@ python scripts/train_model.py \
   --train_features_h5 data/faklevr/train_features_raw.h5 \
   --val_question_h5 data/faklevr/val_questions.h5 \
   --val_features_h5 data/faklevr/val_features_raw.h5 \
+  --vocab_json data/faklevr/vocab.json \
   --model_type FiLM \
-  --num_iterations 2000000 \
-  --print_verbose_every 2000000 \
+  --num_iterations 2502 \
+  --print_verbose_every 2502 \
   --checkpoint_every 1250 \
   --record_loss_every 100 \
   --num_val_samples 16000 \
