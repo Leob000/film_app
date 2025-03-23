@@ -18,7 +18,7 @@ st.markdown(
 
     We have pretrained a model, see `README.md` to get the weights. Our pre-trained model uses the default hyperparameters from the FiLM paper, except that we use 3 FiLM layers, and resnet101 with 1024 features map as the vision CNN model. Our model was trained during around 15 hours, using a M2 Mac mini with 16 GPU cores.
 
-    ### Help for questions
+    #### Help for questions
     Here are a few exemples of questions the model can answer:
     - How many brown objects are there?
     - What is the size of the object left of the red ball?

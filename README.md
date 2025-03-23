@@ -45,6 +45,7 @@ streamlit run Hello.py
 ```
 
 # Detailed use
+## CLEVR Dataset
 If you wish to run the models in the terminal and modify parameters, follow these instructions.
 
 For each script, check the `.sh` and/or the `.py` associated file to modify parameters.
