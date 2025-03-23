@@ -3,6 +3,8 @@ import subprocess
 import platform
 import os
 import time
+import plotly_express as px
+import numpy as np
 
 # Chose the python interpreter path
 current_os = platform.system()
@@ -79,6 +81,22 @@ with tab1:
             while not os.path.exists(attention_img_path):
                 time.sleep(1)
             st.image(attention_img_path, caption="Image with attention", width=400)
+        
+        # importation and processing of the parameters values for the three resblocks
+        parameters=torch.load('D:\\projet FiLM deep learning\\img\\params.pt')
+        beta=[]
+        gamma=[]
+        for i in range(3):
+            beta.extend(parameters[0][i][0:128].tolist())
+            gamma.extend(parameters[0][i][128:256].tolist())
+
+        # ploting the histograms with Plotly
+        hist_gammas = px.histogram(gamma, nbins=70, marginal='rug')
+        hist_gammas.update_layout(title='Histogram of gammas values of the 3 resblocks', xaxis_title='Value', yaxis_title='Frequency')
+        st.plotly_chart(hist_gammas)
+        hist_betas = px.histogram(beta, nbins=70, marginal='rug')
+        hist_betas.update_layout(title='Histogram of gammas values of the 3 resblocks', xaxis_title='Value', yaxis_title='Frequency')
+        st.plotly_chart(hist_betas)
 
 with tab2:
     epoch = st.slider("Epoch", 1, 20, 1)
