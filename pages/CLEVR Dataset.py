@@ -4,6 +4,9 @@ import platform
 import os
 import time
 import string
+import plotly_express as px
+import numpy as np
+import torch
 
 # Chose the python interpreter path
 current_os = platform.system()
@@ -124,3 +127,27 @@ with tab2:
                 caption=f"Image with attention from {attention_to_plot}",
                 width=400,
             )
+
+        # importation and processing of the parameters values for the three resblocks
+        parameters = torch.load("img/params.pt")
+        beta = []
+        gamma = []
+        for i in range(3):
+            beta.extend(parameters[0][i][0:128].tolist())
+            gamma.extend(parameters[0][i][128:256].tolist())
+
+        # ploting the histograms with Plotly
+        hist_gammas = px.histogram(gamma, nbins=70, marginal="rug")
+        hist_gammas.update_layout(
+            title="Histogram of gammas values of the 3 resblocks",
+            xaxis_title="Value",
+            yaxis_title="Frequency",
+        )
+        st.plotly_chart(hist_gammas)
+        hist_betas = px.histogram(beta, nbins=70, marginal="rug")
+        hist_betas.update_layout(
+            title="Histogram of beta values of the 3 resblocks",
+            xaxis_title="Value",
+            yaxis_title="Frequency",
+        )
+        st.plotly_chart(hist_betas)
