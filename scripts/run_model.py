@@ -307,6 +307,10 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
         if not args.streamlit:
             print("Saving visualizations to " + args.viz_dir)
 
+        # Saving Beta and Gamma parameters
+        path_param = os.path.join(args.viz_dir, "params.pt")
+        torch.save(predicted_program,path_param)
+        
         # Backprop w.r.t. sum of output scores - What affected prediction most?
         ee.feats.register_hook(save_grad("stem"))
         for i in range(ee.num_modules):
