@@ -371,6 +371,9 @@ def run_single_example(args, model, device, question_raw, feats_var=None):
     if args.debug_every <= 1:
         pdb.set_trace()
 
+    # Saving Beta and Gamma parameters
+    path_param = os.path.join("img", "params.pt")
+    torch.save(predicted_program, path_param)
     if args.output_viz_dir != "NA":
         viz_dir = args.output_viz_dir + question_raw + " " + predicted_answer
         if not os.path.isdir(args.output_viz_dir):

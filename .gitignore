@@ -2,6 +2,7 @@
 data/
 my_stuff/
 testing.py
+img/params.pt
 
 # Model files
 models/
