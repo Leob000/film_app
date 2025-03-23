@@ -36,7 +36,7 @@ To create images, questions and answers in order to train the small model on str
 sh faklevr_scripts/favlevr_bundle.sh
 ```
 
-Train the small streamlit model (it takes around 20-25 minutes on CPU):
+Train the small streamlit model (it takes around 20-25 minutes on CPU): (possible to change training parameters in the script)
 ```bash
 sh scripts/train/film_faklevr_raw.sh
 ```
