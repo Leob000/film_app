@@ -59,7 +59,20 @@ with tab2:
     )
 
     # Checkbox to visualize attention
-    visualize = st.checkbox("Visualize attention", value=True)
+    attention_to_plot = st.selectbox(
+        "Attention map from:",
+        [
+            "None",
+            "conv-stem",
+            "none",
+            "pool-feature-locations",
+            "pre-pool",
+            "grad-conv-stem",
+        ]
+        + [f"grad-resblock{i}" for i in range(2)]
+        + [f"resblock{i}" for i in range(2)],
+        index=3,
+    )
 
     # Create a form so that hitting Enter submits the input
     with st.form(key="question_form"):
@@ -81,7 +94,7 @@ with tab2:
                 "--streamlit",
                 "True",
                 "--visualize_attention",
-                str(visualize),
+                str(attention_to_plot != "None"),
                 "--output_viz_dir",
                 "data/faklevr/images/attention_visualizations/",
                 "--image_width",
@@ -116,9 +129,13 @@ with tab2:
         #     st.write(error)
 
         # Display the image with attention, if requested
-        if visualize:
-            attention_img_path = f"data/faklevr/images/attention_visualizations/{user_input} {output}/pool-feature-locations.png"
+        if attention_to_plot != "None":
+            attention_img_path = f"data/faklevr/images/attention_visualizations/{user_input} {output}/{attention_to_plot}.png"
             # Wait for the image to be created
             while not os.path.exists(attention_img_path):
                 time.sleep(1)
-            st.image(attention_img_path, caption="Image with attention", width=400)
+            st.image(
+                attention_img_path,
+                caption=f"Image with attention from {attention_to_plot}",
+                width=400,
+            )

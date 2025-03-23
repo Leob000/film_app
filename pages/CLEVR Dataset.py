@@ -56,7 +56,20 @@ with tab2:
     )
 
     # Checkbox to visualize attention
-    visualize = st.checkbox("Visualize attention", value=True)
+    attention_to_plot = st.selectbox(
+        "Attention map from:",
+        [
+            "None",
+            "conv-stem",
+            "resnet101",
+            "pool-feature-locations",
+            "pre-pool",
+            "grad-conv-stem",
+        ]
+        + [f"grad-resblock{i}" for i in range(3)]
+        + [f"resblock{i}" for i in range(3)],
+        index=3,
+    )
 
     # Create a form so that hitting Enter submits the input
     with st.form(key="question_form"):
@@ -74,7 +87,7 @@ with tab2:
                 "--streamlit",
                 "True",
                 "--visualize_attention",
-                str(visualize),
+                str(attention_to_plot != "None"),
             ],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -101,13 +114,13 @@ with tab2:
         #     st.write(error)
 
         # Display the image with attention, if requested
-        if visualize:
-            attention_img_path = f"img/attention_visualizations/{user_input} {output}/pool-feature-locations.png"
+        if attention_to_plot != "None":
+            attention_img_path = f"img/attention_visualizations/{user_input} {output}/{attention_to_plot}.png"
             # Wait for the image to be created
             while not os.path.exists(attention_img_path):
                 time.sleep(1)
             st.image(
                 attention_img_path,
-                caption="Where the feature maps are active (before the MLP)",
+                caption=f"Image with attention from {attention_to_plot}",
                 width=400,
             )
