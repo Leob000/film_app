@@ -15,7 +15,7 @@ wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4n
 ### To train a new model on our custom simpler dataset
 To create images, questions and answers in order to train the small model on streamlit, run:
 ```bash
-sh faklevr_scripts/favlevr_bundle.sh
+sh faklevr_scripts/faklevr_bundle.sh
 ```
 
 Train the small streamlit model (it takes around 20-25 minutes on CPU): (possible to change training parameters in the script)
