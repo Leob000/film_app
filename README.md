@@ -1,35 +1,62 @@
-# Simple use
-## Requirements
-### Python and packages
-- Python 3.12
-- Other dependencies listed in `requirements.txt`, run `pip install -r requirements.txt`.
+# FiLM Visual Reasoning with Interactive Web Interface
 
-### Download our pre-trained model for the CLEVR dataset
-We pretrained a big model (3 FiLM layers, resnet101 with 1024 feature maps for the vision CNN model).
-To get the weights (in `data/best.pt`), run:
+Enhanced implementation of Feature-wise Linear Modulation for visual question answering with modern tooling and custom datasets.
 
+## Key Features & Contributions
+
+- Interactive Streamlit Application: Complete web interface for real-time visual question answering with attention visualization
+- Custom "Faklevr" Dataset: Lightweight 2D synthetic dataset enabling CPU-only training in 20-25 minutes vs. hours on GPU
+- Attention Visualization: Interactive attention maps showing model focus areas for interpretability
+- Cross-Platform Support: Windows/Mac/Linux compatibility with automatic device detection (CUDA/MPS/CPU)
+- Model Analysis Tools: Statistical visualization of FiLM layer parameters (gamma/beta distributions)
+- Optimized Training Pipeline: Streamlined scripts for both full CLEVR and custom dataset training
+
+## Quick Start
+
+### Launch Interactive Demo
+```bash
+pip install -r requirements.txt
+streamlit run Hello.py
+```
+
+### Train Custom Model (20-25 min on a common CPU)
+```bash
+sh faklevr_scripts/faklevr_bundle.sh        # Generate dataset
+sh scripts/train/film_faklevr_raw.sh         # Train model
+```
+
+### Use Pre-trained CLEVR Model
+Download weights for full CLEVR dataset model:
 ```bash
 wget "https://www.dropbox.com/scl/fi/1exvuj8mp0122c0faogte/best.pt?rlkey=huyzf4nhnr6p8jwsnyiy14nd0&st=odj3a2ns" -O data/best.pt
 ```
 
-### To train a new model on our custom simpler dataset
-To create images, questions and answers in order to train the small model on streamlit, run:
-```bash
-sh faklevr_scripts/faklevr_bundle.sh
-```
+## Requirements
+- Python 3.12
+- Dependencies: `pip install -r requirements.txt`
 
-Train the small streamlit model (it takes around 20-25 minutes on CPU): (possible to change training parameters in the script)
-```bash
-sh scripts/train/film_faklevr_raw.sh
-```
+# Advanced Features
 
-## Streamlit app
-To launch the streamlit app, run:
-```bash
-streamlit run Hello.py
-```
+## Interactive Streamlit Interface
+- Real-time Question Answering: Ask questions about images and get instant responses
+- Attention Visualization: See where the model focuses when answering questions
+- Dual Dataset Support: Switch between full CLEVR and custom Faklevr datasets
+- Parameter Analysis: Live visualization of FiLM layer gamma/beta distributions
 
-# Detailed use
+## Custom Faklevr Dataset
+Our lightweight alternative to CLEVR featuring:
+- 2D Geometric Shapes: Rectangles, ellipses, triangles in red/green/blue
+- Simplified Questions: Focus on counting and color/shape identification
+- Fast Training: 20-25 minutes on CPU vs. hours for full CLEVR
+- Raw Pixel Processing: No pre-trained CNN required
+
+## Technical Improvements
+- Device Agnostic: Automatic CUDA/MPS/CPU detection
+- Cross-Platform: Windows, macOS, Linux support
+- Error Handling: Robust input processing and model loading
+- Modular Architecture: Clean separation of training, inference, and visualization
+
+# Detailed Usage
 ## CLEVR Dataset
 If you wish to run the models in the terminal and modify parameters, follow these instructions.
 
@@ -61,7 +88,7 @@ To run the model (on `CLEVR_val_000017.png` by default):
 sh scripts/run_model.sh
 ```
 
-# References
-- The code in this repo is heavily inspired by the repos [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
+# Original Research & References
+- Based on [FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
+- Code forked and inspired by [Film](https://github.com/ethanjperez/film) and [Clever-iep](https://github.com/facebookresearch/clevr-iep)
 - [Distill: Feature wise transformations](https://distill.pub/2018/feature-wise-transformations/)
-- [Arxiv: FiLM: Visual Reasoning with a General Conditioning Layer](https://arxiv.org/pdf/1709.07871)
